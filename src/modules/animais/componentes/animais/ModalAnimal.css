@@ -1,0 +1,84 @@
+.modal-animal {
+    background: var(--branco);
+    width: 90%;
+    max-width: 900px;
+    border-radius: 20px;
+    padding: 30px;
+    position: relative;
+}
+
+.modal-topo {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.modal-foto {
+    flex: 1;
+    min-width: 280px;
+}
+
+.modal-foto img {
+    width: 100%;
+    border-radius: 16px;
+}
+
+.modal-info {
+    flex: 1;
+}
+
+.modal-info h2 {
+    margin-top: 0;
+    color: var(--verde-escuro);
+}
+
+.modal-sobre {
+    margin-top: 25px;
+}
+
+.modal-acoes {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 25px;
+}
+
+.botao-excluir {
+    background: transparent;
+    color: var(--preto);
+    border: 1px solid var(--cinza-escuro);
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.botao-excluir:hover {
+    background: var(--cinza);
+    color: var(--branco);
+}
+
+.botao-excluir:active {
+    background: var(--cinza-escuro);
+    color: var(--branco);
+}
+
+.botao-editar {
+    background: var(--verde);
+    color: var(--branco);
+    border: none;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.botao-editar:hover {
+    background: var(--verde-claro);
+}
+
+.botao-editar:active {
+    background: var(--verde-escuro);
+}

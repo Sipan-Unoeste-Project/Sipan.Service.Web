@@ -1,0 +1,46 @@
+.footer {
+    background-color: #16734b;
+    padding: 18px 30px;
+    margin-top: auto;
+    border-top: 3px solid #2aac73;
+}
+
+.footer-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.footer-logo-img {
+    height: 65px;
+    width: auto;
+}
+
+.footer-social {
+    display: flex;
+    gap: 20px;
+}
+
+.social-icon {
+    color: white;
+    font-size: 1.8rem;
+    transition: all 0.3s;
+    opacity: 0.9;
+}
+
+.social-icon:hover {
+    color: #2aac73;
+    transform: scale(1.15);
+    opacity: 1;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+    .footer-container {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+}

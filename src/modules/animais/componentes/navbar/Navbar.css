@@ -1,0 +1,88 @@
+.navbar {
+    background-color: #16734b; /* Verde do protótipo */
+    padding: 12px 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.navbar-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.navbar-logo {
+    flex-shrink: 0;
+}
+
+.logo-img {
+    height: 55px;
+    width: auto;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Campo de Busca */
+.search-form {
+    flex: 1;
+    max-width: 500px;
+}
+
+.search-container {
+    position: relative;
+    width: 100%;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 20px 10px 45px;
+    border: none;
+    border-radius: 30px;
+    font-size: 1rem;
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #333;
+    transition: all 0.3s;
+}
+
+.search-input:focus {
+    outline: none;
+    background-color: white;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
+}
+
+.search-btn {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: #555;
+    cursor: pointer;
+}
+
+/* Ícone do Usuário */
+.navbar-user .user-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.3s;
+}
+
+.navbar-user .user-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
