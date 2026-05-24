@@ -1,0 +1,36 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sipan-mysql
+    restart: unless-stopped
+    ports:
+      # 3307 no PC porque o MySQL local do Windows já usa a 3306
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root_local_dev
+      MYSQL_DATABASE: sipan
+      MYSQL_USER: sipan
+      MYSQL_PASSWORD: sipan_dev_2026
+    volumes:
+      - sipan_mysql_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_local_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+
+  adminer:
+    image: adminer:latest
+    container_name: sipan-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  sipan_mysql_data:
