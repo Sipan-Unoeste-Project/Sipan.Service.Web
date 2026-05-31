@@ -1,50 +1,53 @@
-const CHAVE_ANIMAIS = "sipan_animais";
+const API_URL = "http://localhost:5089/api/animais";
 
-export const listarAnimais = () => {
-  const dados = localStorage.getItem(CHAVE_ANIMAIS);
-  return dados ? JSON.parse(dados) : [];
-};
-
-export const salvarAnimais = (animais) => {
-  localStorage.setItem(CHAVE_ANIMAIS, JSON.stringify(animais));
-};
-
-export const adicionarAnimal = (novoAnimal) => {
-  const animais = listarAnimais();
-  
-  const animalCompleto = {
-    ...novoAnimal,
-    id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
-    dataCadastro: new Date().toISOString()
-  };
-
-  animais.push(animalCompleto);
-  salvarAnimais(animais);
-  
-  return animalCompleto;
-};
-
-export const atualizarAnimal = (id, animalAtualizado) => {
-  const animais = listarAnimais();
-  const index = animais.findIndex(a => a.id === id);
-  
-  if (index !== -1) {
-    animais[index] = { 
-      ...animalAtualizado, 
-      id 
-    };
-    salvarAnimais(animais);
-    return animais[index];
+export const listarAnimais = async () => {
+  try {
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error("Erro ao carregar animais");
+    return await res.json();
+  } catch (error) {
+    console.error("Erro ao listar animais:", error);
+    return [];
   }
-  return null;
 };
 
-export const excluirAnimal = (id) => {
-  const animais = listarAnimais().filter(animal => animal.id !== id);
-  salvarAnimais(animais);
-  return true;
+export const adicionarAnimal = async (novoAnimal) => {
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(novoAnimal),
+    });
+    if (!res.ok) throw new Error("Erro ao cadastrar");
+    return await res.json();
+  } catch (error) {
+    console.error("Erro ao adicionar animal:", error);
+    throw error;
+  }
 };
 
-export const buscarAnimalPorId = (id) => {
-  return listarAnimais().find(animal => animal.id === id);
+export const atualizarAnimal = async (id, animalAtualizado) => {
+  try {
+    const res = await fetch(`${API_URL}/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(animalAtualizado),
+    });
+    if (!res.ok) throw new Error("Erro ao atualizar");
+    return await res.json();
+  } catch (error) {
+    console.error("Erro ao atualizar animal:", error);
+    throw error;
+  }
+};
+
+export const excluirAnimal = async (id) => {
+  try {
+    const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("Erro ao excluir");
+    return true;
+  } catch (error) {
+    console.error("Erro ao excluir animal:", error);
+    throw error;
+  }
 };

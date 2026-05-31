@@ -79,34 +79,40 @@ const FormularioAnimal = ({ animalParaEditar = null, onSalvar }) => {
         return !erros;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        const formularioValido = validarFormulario();
 
-        if (!formularioValido) {
-        return;
-    }
+        const formularioValido = validarFormulario();
+        if (!formularioValido) return;
 
         const animalSalvar = {
             ...form,
-            id: animalParaEditar?.id || Date.now().toString(),
-            dataCadastro: animalParaEditar?.dataCadastro || new Date().toISOString()
+            id: animalParaEditar?.id,
+            dataNascimento: form.dataNascimento || null,
+            dataAcolhimento: form.dataAcolhimento || null,
+            vacinas: form.vacinas || null,
+            sobre: form.sobre || null,
+            foto: form.foto || null,
         };
 
-        if (animalParaEditar) {
-            atualizarAnimal(animalParaEditar.id, animalSalvar);
-            alert("Animal atualizado com sucesso!");
-        } else {
-            adicionarAnimal(animalSalvar);
-            alert("Animal cadastrado com sucesso!");
-        }
+        try {
+            if (animalParaEditar) {
+                await atualizarAnimal(animalParaEditar.id, animalSalvar);
+                alert("Animal atualizado com sucesso!");
+            } else {
+                await adicionarAnimal(animalSalvar);
+                alert("Animal cadastrado com sucesso!");
+            }
 
-        onSalvar?.();
+            onSalvar?.();
 
-        if (!animalParaEditar) {
-            setForm(modeloAnimal);
-            setPreviewFoto(null);
+            if (!animalParaEditar) {
+                setForm(modeloAnimal);
+                setPreviewFoto(null);
+            }
+        } catch (error) {
+            alert("Erro ao salvar o animal. Verifique o console.");
+            console.error(error);
         }
     };
 
