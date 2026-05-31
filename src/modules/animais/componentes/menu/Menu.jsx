@@ -1,44 +1,31 @@
-import { Link, useLocation } from 'react-router-dom';
-import './Menu.css';
+import { Link, useLocation } from "react-router-dom";
 
 const Menu = () => {
-    const location = useLocation();
+  const location = useLocation();
 
-    const menuItems = [
-        // { path: '/quem-somos', label: 'Quem Somos' },
-        { path: '/animais', label: 'Animais' },
-        // { path: '/doacoes', label: 'Doações' },
-        // { path: '/estoque', label: 'Estoque' },
-        // { path: '/financeiro', label: 'Financeiro' },
-        // { path: '/campanhas', label: 'Campanhas' },
-        // { path: '/contato', label: 'Contato' },
-    ];
+  const menuItems = [
+    { path: "/animais", label: "Animais" },
+  ];
 
-    return (
-        <div className="sidebar">
-            <nav className="sidebar-nav">
-                <ul>
-                    {menuItems.map((item) => (
-                        <li key={item.path}>
-                            <Link
-                                to={item.path}
-                                className={`menu-item ${location.pathname === item.path ? 'active' : ''}`}
-                            >
-                                <span className="menu-icon">{item.icon}</span>
-                                <span className="menu-label">{item.label}</span>
-                            </Link>
-                        </li>
-                    ))}
-                </ul>
-            </nav>
+  return (
+    <div className="d-flex flex-column vh-100 bg-light border-end">
+      <nav className="nav flex-column p-3 gap-1">
+        {menuItems.map((item) => (
+          <Link
+            key={item.path}
+            to={item.path}
+            className={`nav-link rounded ${location.pathname === item.path ? "bg-success text-white fw-semibold" : "text-dark"}`}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </nav>
 
-            <div className="sidebar-exit">
-                <button className="botao-sair" onClick={() => alert('Saindo do sistema...')}>
-                    Sair
-                </button>
-            </div>
-        </div>
-    );
+      <div className="mt-auto p-3">
+        <button className="btn btn-outline-secondary w-100" onClick={() => alert("Saindo do sistema...")}>Sair</button>
+      </div>
+    </div>
+  );
 };
 
 export default Menu;

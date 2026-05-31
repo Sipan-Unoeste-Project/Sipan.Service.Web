@@ -3,10 +3,9 @@ import CardAnimal from "../componentes/animais/CardAnimal";
 import FormularioAnimal from "../componentes/animais/FormularioAnimal";
 import ModalAnimal from "../componentes/animais/ModalAnimal.jsx";
 import { listarAnimais, excluirAnimal } from "../utils/storageAnimais";
-import "./PaginaAnimais.css";
 
 const PaginaAnimais = () => {
-const [animais, setAnimais] = useState([]);
+    const [animais, setAnimais] = useState([]);
     const [animalParaEditar, setAnimalParaEditar] = useState(null);
     const [mostrarFormulario, setMostrarFormulario] = useState(false);
     const [busca, setBusca] = useState("");
@@ -33,7 +32,7 @@ const [animais, setAnimais] = useState([]);
     const handleSalvar = async () => {
         setMostrarFormulario(false);
         setAnimalParaEditar(null);
-        await carregarAnimais(); 
+        await carregarAnimais();
     };
 
     const handleExcluir = async (id) => {
@@ -46,52 +45,53 @@ const [animais, setAnimais] = useState([]);
         }
     };
 
-    const animaisFiltrados = animais.filter(animal =>
+    const animaisFiltrados = animais.filter((animal) =>
         animal.nome?.toLowerCase().includes(busca.toLowerCase()) ||
         animal.especie?.toLowerCase().includes(busca.toLowerCase()) ||
         animal.raca?.toLowerCase().includes(busca.toLowerCase())
     );
 
     return (
-        <div className="animal-container">
-            <div className="animal-header">
-                <h1>Animais</h1>
+        <div className="container-fluid py-4">
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+                <h1 className="h2 mb-0">Animais</h1>
 
-                <div className="animal-acoe">
-                    <button
-                        className="botao botao-cadastrar"
-                        onClick={() => {
-                            setAnimalParaEditar(null);
-                            setMostrarFormulario(true);
-                        }}
-                    >
-                        Cadastrar Animal
-                    </button>
-                </div>
+                <button
+                    className="btn btn-success"
+                    onClick={() => {
+                        setAnimalParaEditar(null);
+                        setMostrarFormulario(true);
+                    }}
+                >
+                    Cadastrar Animal
+                </button>
             </div>
 
-            <div className="search-bar">
+            <div className="mb-4">
                 <input
                     type="text"
                     placeholder="Buscar ..."
                     value={busca}
                     onChange={(e) => setBusca(e.target.value)}
+                    className="form-control form-control-lg"
                 />
             </div>
 
-            <div className="cards-grid">
+            <div className="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
                 {loading ? (
-                    <p>Carregando animais...</p>
+                    <div className="col-12">
+                        <div className="alert alert-secondary mb-0">Carregando animais...</div>
+                    </div>
                 ) : animaisFiltrados.length > 0 ? (
-                    animaisFiltrados.map(animal => (
-                        <CardAnimal
-                            key={animal.id}
-                            animal={animal}
-                            onAbrir={setAnimalSelecionado}
-                        />
+                    animaisFiltrados.map((animal) => (
+                        <div key={animal.id} className="col">
+                            <CardAnimal animal={animal} onAbrir={setAnimalSelecionado} />
+                        </div>
                     ))
                 ) : (
-                    <p className="sem-resultados">Nenhum animal encontrado.</p>
+                    <div className="col-12">
+                        <div className="alert alert-warning mb-0">Nenhum animal encontrado.</div>
+                    </div>
                 )}
             </div>
 
@@ -107,21 +107,50 @@ const [animais, setAnimais] = useState([]);
             />
 
             {mostrarFormulario && (
-                <div className="modal-overlay">
-                    <div className="modal-content">
-                        <FormularioAnimal
-                            animalParaEditar={animalParaEditar}
-                            onSalvar={handleSalvar}
-                        />
-                        <button
-                            className="botao botao-fechar"
-                            onClick={() => {
-                                setMostrarFormulario(false);
-                                setAnimalParaEditar(null);
-                            }}
-                        >
-                            ✕
-                        </button>
+                <div
+                    className="d-flex justify-content-center"
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        background: "rgba(0, 0, 0, 0.65)",
+                        zIndex: 1050,
+                        padding: "1rem",
+                        overflowY: "auto",
+                    }}
+                    onClick={() => {
+                        setMostrarFormulario(false);
+                        setAnimalParaEditar(null);
+                    }}
+                >
+                    <div
+                        className="card shadow-lg w-100 mx-3"
+                        style={{
+                            maxWidth: 900,
+                            maxHeight: "90vh",
+                            overflowY: "auto",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="card-body position-relative">
+                            <button
+                                type="button"
+                                className="btn-close position-absolute top-0 end-0 m-3"
+                                aria-label="Fechar"
+                                onClick={() => {
+                                    setMostrarFormulario(false);
+                                    setAnimalParaEditar(null);
+                                }}
+                            />
+
+                            <FormularioAnimal
+                                animalParaEditar={animalParaEditar}
+                                onSalvar={handleSalvar}
+                                onCancelar={() => {
+                                    setMostrarFormulario(false);
+                                    setAnimalParaEditar(null);
+                                }}
+                            />
+                        </div>
                     </div>
                 </div>
             )}
