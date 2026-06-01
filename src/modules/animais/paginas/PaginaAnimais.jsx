@@ -1,161 +1,194 @@
-import { useState, useEffect, useCallback } from "react";
-import CardAnimal from "../componentes/animais/CardAnimal";
-import FormularioAnimal from "../componentes/animais/FormularioAnimal";
-import ModalAnimal from "../componentes/animais/ModalAnimal.jsx";
-import { listarAnimais, excluirAnimal } from "../utils/storageAnimais";
+import { useState, useEffect, useCallback } from 'react';
+import PageShell from '../../../components/PageShell';
+import ConfirmModal from '../../../components/ConfirmModal';
+import FeedbackAlert from '../../../components/FeedbackAlert';
+import Toast from '../../../components/Toast';
+import { useTimedMessage } from '../../../hooks/useTimedMessage';
+import CardAnimal from '../componentes/animais/CardAnimal';
+import FormularioAnimal from '../componentes/animais/FormularioAnimal';
+import ModalAnimal from '../componentes/animais/ModalAnimal';
+import { listarAnimais, excluirAnimal } from '../utils/storageAnimais';
 
-const PaginaAnimais = () => {
-    const [animais, setAnimais] = useState([]);
-    const [animalParaEditar, setAnimalParaEditar] = useState(null);
-    const [mostrarFormulario, setMostrarFormulario] = useState(false);
-    const [busca, setBusca] = useState("");
-    const [animalSelecionado, setAnimalSelecionado] = useState(null);
-    const [loading, setLoading] = useState(false);
+export default function PaginaAnimais() {
+  const [animais, setAnimais] = useState([]);
+  const [animalParaEditar, setAnimalParaEditar] = useState(null);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [busca, setBusca] = useState('');
+  const [animalSelecionado, setAnimalSelecionado] = useState(null);
+  const [excluirAlvo, setExcluirAlvo] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useTimedMessage(3500);
+  const [erro, setErro] = useTimedMessage(6000);
 
-    const carregarAnimais = useCallback(async () => {
-        setLoading(true);
-        try {
-            const lista = await listarAnimais();
-            setAnimais(lista);
-        } catch (error) {
-            console.error("Erro ao carregar animais:", error);
-            alert("Erro ao carregar lista de animais.");
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+  const carregarAnimais = useCallback(async () => {
+    setLoading(true);
+    try {
+      const lista = await listarAnimais();
+      setAnimais(lista);
+    } catch (error) {
+      console.error('Erro ao carregar animais:', error);
+      setErro('Não foi possível carregar a lista de animais. Verifique se a API está em execução.');
+    } finally {
+      setLoading(false);
+    }
+  }, [setErro]);
 
-    useEffect(() => {
-        carregarAnimais();
-    }, [carregarAnimais]);
+  useEffect(() => {
+    carregarAnimais();
+  }, [carregarAnimais]);
 
-    const handleSalvar = async () => {
-        setMostrarFormulario(false);
-        setAnimalParaEditar(null);
-        await carregarAnimais();
-    };
+  const handleSalvar = async () => {
+    setMostrarFormulario(false);
+    setAnimalParaEditar(null);
+    await carregarAnimais();
+  };
 
-    const handleExcluir = async (id) => {
-        try {
-            await excluirAnimal(id);
-            await carregarAnimais();
-        } catch (error) {
-            alert("Erro ao excluir o animal.");
-            console.error("Erro ao excluir animal:", error.message);
-        }
-    };
+  async function confirmarExclusao() {
+    if (!excluirAlvo) return;
+    try {
+      await excluirAnimal(excluirAlvo.id);
+      setAnimalSelecionado(null);
+      setExcluirAlvo(null);
+      setToast('Animal excluído com sucesso.');
+      await carregarAnimais();
+    } catch (error) {
+      console.error('Erro ao excluir animal:', error);
+      setErro('Erro ao excluir o animal.');
+      setExcluirAlvo(null);
+    }
+  }
 
-    const animaisFiltrados = animais.filter((animal) =>
-        animal.nome?.toLowerCase().includes(busca.toLowerCase()) ||
-        animal.especie?.toLowerCase().includes(busca.toLowerCase()) ||
-        animal.raca?.toLowerCase().includes(busca.toLowerCase())
-    );
+  const animaisFiltrados = animais.filter(
+    (animal) =>
+      animal.nome?.toLowerCase().includes(busca.toLowerCase()) ||
+      animal.especie?.toLowerCase().includes(busca.toLowerCase()) ||
+      animal.raca?.toLowerCase().includes(busca.toLowerCase())
+  );
 
-    return (
-        <div className="container-fluid py-4">
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
-                <h1 className="h2 mb-0">Animais</h1>
+  return (
+    <PageShell
+      title="Animais"
+      subtitle="Cadastro e acompanhamento dos animais do abrigo"
+      action={
+        <button
+          type="button"
+          className="btn btn-success"
+          onClick={() => {
+            setAnimalParaEditar(null);
+            setMostrarFormulario(true);
+          }}
+        >
+          + Cadastrar Animal
+        </button>
+      }
+    >
+      <FeedbackAlert message={erro} variant="danger" />
 
+      <div className="mb-4">
+        <input
+          type="search"
+          className="form-control"
+          style={{ maxWidth: 320 }}
+          placeholder="Buscar por nome, espécie ou raça..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+        />
+      </div>
+
+      <div className="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+        {loading ? (
+          <div className="col-12">
+            <div className="alert alert-secondary mb-0">Carregando animais...</div>
+          </div>
+        ) : animaisFiltrados.length > 0 ? (
+          animaisFiltrados.map((animal) => (
+            <div key={animal.id} className="col">
+              <CardAnimal animal={animal} onAbrir={setAnimalSelecionado} />
+            </div>
+          ))
+        ) : (
+          <div className="col-12">
+            <div className="alert alert-warning mb-0">Nenhum animal encontrado.</div>
+          </div>
+        )}
+      </div>
+
+      <ModalAnimal
+        animal={animalSelecionado}
+        onFechar={() => setAnimalSelecionado(null)}
+        onEditar={(animal) => {
+          setAnimalSelecionado(null);
+          setAnimalParaEditar(animal);
+          setMostrarFormulario(true);
+        }}
+        onRequestExcluir={(animal) => {
+          setExcluirAlvo({ id: animal.id, nome: animal.nome });
+        }}
+      />
+
+      {mostrarFormulario && (
+        <div
+          className="modal-backdrop fade show d-block"
+          style={{ zIndex: 1040 }}
+          onClick={() => {
+            setMostrarFormulario(false);
+            setAnimalParaEditar(null);
+          }}
+          role="presentation"
+        />
+      )}
+
+      {mostrarFormulario && (
+        <div
+          className="modal fade show d-block"
+          tabIndex={-1}
+          style={{ zIndex: 1050 }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  {animalParaEditar ? 'Editar Animal' : 'Cadastrar Animal'}
+                </h5>
                 <button
-                    className="btn btn-success"
-                    onClick={() => {
-                        setAnimalParaEditar(null);
-                        setMostrarFormulario(true);
-                    }}
-                >
-                    Cadastrar Animal
-                </button>
-            </div>
-
-            <div className="mb-4">
-                <input
-                    type="text"
-                    placeholder="Buscar ..."
-                    value={busca}
-                    onChange={(e) => setBusca(e.target.value)}
-                    className="form-control form-control-lg"
+                  type="button"
+                  className="btn-close"
+                  aria-label="Fechar"
+                  onClick={() => {
+                    setMostrarFormulario(false);
+                    setAnimalParaEditar(null);
+                  }}
                 />
+              </div>
+              <div className="modal-body">
+                <FormularioAnimal
+                  animalParaEditar={animalParaEditar}
+                  onSalvar={handleSalvar}
+                  onCancelar={() => {
+                    setMostrarFormulario(false);
+                    setAnimalParaEditar(null);
+                  }}
+                  onFeedback={(message, type) => {
+                    if (type === 'error') setErro(message);
+                    else setToast(message);
+                  }}
+                />
+              </div>
             </div>
-
-            <div className="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
-                {loading ? (
-                    <div className="col-12">
-                        <div className="alert alert-secondary mb-0">Carregando animais...</div>
-                    </div>
-                ) : animaisFiltrados.length > 0 ? (
-                    animaisFiltrados.map((animal) => (
-                        <div key={animal.id} className="col">
-                            <CardAnimal animal={animal} onAbrir={setAnimalSelecionado} />
-                        </div>
-                    ))
-                ) : (
-                    <div className="col-12">
-                        <div className="alert alert-warning mb-0">Nenhum animal encontrado.</div>
-                    </div>
-                )}
-            </div>
-
-            <ModalAnimal
-                animal={animalSelecionado}
-                onFechar={() => setAnimalSelecionado(null)}
-                onEditar={(animal) => {
-                    setAnimalSelecionado(null);
-                    setAnimalParaEditar(animal);
-                    setMostrarFormulario(true);
-                }}
-                onExcluir={handleExcluir}
-            />
-
-            {mostrarFormulario && (
-                <div
-                    className="d-flex justify-content-center"
-                    style={{
-                        position: "fixed",
-                        inset: 0,
-                        background: "rgba(0, 0, 0, 0.65)",
-                        zIndex: 1050,
-                        padding: "1rem",
-                        overflowY: "auto",
-                    }}
-                    onClick={() => {
-                        setMostrarFormulario(false);
-                        setAnimalParaEditar(null);
-                    }}
-                >
-                    <div
-                        className="card shadow-lg w-100 mx-3"
-                        style={{
-                            maxWidth: 900,
-                            maxHeight: "90vh",
-                            overflowY: "auto",
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="card-body position-relative">
-                            <button
-                                type="button"
-                                className="btn-close position-absolute top-0 end-0 m-3"
-                                aria-label="Fechar"
-                                onClick={() => {
-                                    setMostrarFormulario(false);
-                                    setAnimalParaEditar(null);
-                                }}
-                            />
-
-                            <FormularioAnimal
-                                animalParaEditar={animalParaEditar}
-                                onSalvar={handleSalvar}
-                                onCancelar={() => {
-                                    setMostrarFormulario(false);
-                                    setAnimalParaEditar(null);
-                                }}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
+          </div>
         </div>
-    );
-};
+      )}
 
-export default PaginaAnimais;
+      <ConfirmModal
+        show={!!excluirAlvo}
+        nome={excluirAlvo?.nome}
+        onConfirm={confirmarExclusao}
+        onCancel={() => setExcluirAlvo(null)}
+      />
+
+      <Toast message={toast} type="success" />
+    </PageShell>
+  );
+}

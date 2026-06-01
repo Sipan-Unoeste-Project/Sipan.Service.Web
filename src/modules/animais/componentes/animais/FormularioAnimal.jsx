@@ -5,7 +5,8 @@ import { modeloAnimal, portes, statusOptions } from "../../utils/modeloAnimal";
 const FormularioAnimal = ({
     animalParaEditar = null,
     onSalvar,
-    onCancelar
+    onCancelar,
+    onFeedback,
 }) => {
     const [form, setForm] = useState(modeloAnimal);
     const [previewFoto, setPreviewFoto] = useState(null);
@@ -37,7 +38,7 @@ const FormularioAnimal = ({
         const file = e.target.files[0];
         if (file) {
             if (file.size > 5 * 1024 * 1024) {
-                alert("A foto deve ter no máximo 5MB");
+                onFeedback?.("A foto deve ter no máximo 5MB", "error");
                 return;
             }
             const reader = new FileReader();
@@ -100,10 +101,10 @@ const FormularioAnimal = ({
         try {
             if (animalParaEditar) {
                 await atualizarAnimal(animalParaEditar.id, animalSalvar);
-                alert("Animal atualizado com sucesso!");
+                onFeedback?.("Animal atualizado com sucesso!", "success");
             } else {
                 await adicionarAnimal(animalSalvar);
-                alert("Animal cadastrado com sucesso!");
+                onFeedback?.("Animal cadastrado com sucesso!", "success");
             }
 
             onSalvar?.();
@@ -113,18 +114,12 @@ const FormularioAnimal = ({
                 setPreviewFoto(null);
             }
         } catch (error) {
-            alert("Erro ao salvar o animal. Verifique o console.");
+            onFeedback?.("Erro ao salvar o animal. Verifique se a API está em execução.", "error");
             console.error(error);
         }
     };
 
     return (
-        <div className="card shadow-sm">
-            <div className="card-body">
-                <h2 className="card-title h4 mb-4">
-                    {animalParaEditar ? "Editar Animal" : "Cadastrar Novo Animal"}
-                </h2>
-
                 <form onSubmit={handleSubmit}>
                     <div className="row g-3">
                         <div className="col-12 col-md-6">
@@ -312,8 +307,6 @@ const FormularioAnimal = ({
                         </div>
                     </div>
                 </form>
-            </div>
-        </div>
     );
 };
 

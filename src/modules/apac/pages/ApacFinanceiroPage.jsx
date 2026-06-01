@@ -1,19 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { ApiError } from '../../../api/client';
+import * as financeiroApi from '../../../api/financeiroApi';
+import { getDataAtualIso } from '../../../utils/dates';
 import PageShell from '../../../components/PageShell';
 import ApacTabs from '../components/ApacTabs';
 import StatRow from '../components/StatRow';
-import {
-  loadFinanceiro,
-  saveFinanceiro,
-  parseValor,
-  formatBRL,
-  getDataAtual,
-} from '../storage/apacStorage';
+import FeedbackAlert from '../../../components/FeedbackAlert';
+import { useTimedMessage } from '../../../hooks/useTimedMessage';
+import { parseValor, formatBRL } from '../storage/apacStorage';
 
 const emptyEntrada = {
   origem: 'Doação em dinheiro',
   valor: '',
-  data: getDataAtual(),
+  data: getDataAtualIso(),
   responsavel: '',
   campanha: '',
   observacoes: '',
@@ -22,7 +21,7 @@ const emptyEntrada = {
 const emptySaida = {
   tipo: 'Veterinário',
   valor: '',
-  data: getDataAtual(),
+  data: getDataAtualIso(),
   fornecedor: '',
   animal: '',
   observacoes: '',
@@ -33,62 +32,60 @@ export default function ApacFinanceiroPage() {
   const [tab, setTab] = useState('entrada');
   const [formE, setFormE] = useState(emptyEntrada);
   const [formS, setFormS] = useState(emptySaida);
-  const [msg, setMsg] = useState('');
+  const [msg, setMsg] = useTimedMessage(3000);
+  const [erro, setErro] = useTimedMessage(6000);
 
-  useEffect(() => {
-    setData(loadFinanceiro());
-  }, []);
-
-  useEffect(() => {
-    if (msg) {
-      const t = setTimeout(() => setMsg(''), 3000);
-      return () => clearTimeout(t);
+  const carregar = useCallback(async () => {
+    try {
+      const raw = await financeiroApi.loadFinanceiro();
+      setData(financeiroApi.mapFinanceiroUi(raw));
+    } catch (err) {
+      setErro(
+        err instanceof ApiError
+          ? err.message
+          : 'Não foi possível carregar financeiro. Execute database/apac_extended_schema.sql.'
+      );
     }
-  }, [msg]);
+  }, [setErro]);
 
-  function persist(next) {
-    setData(next);
-    saveFinanceiro(next);
-  }
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
 
   const totalEntrada = data.entradas.reduce((s, e) => s + e.valor, 0);
   const totalSaida = data.saidas.reduce((s, e) => s + e.valor, 0);
   const saldo = totalEntrada - totalSaida;
 
-  function registrarEntrada(e) {
+  async function registrarEntrada(e) {
     e.preventDefault();
-    persist({
-      ...data,
-      entradas: [
-        {
-          id: Date.now(),
-          ...formE,
-          valor: parseValor(formE.valor),
-        },
-        ...data.entradas,
-      ],
-    });
-    setFormE({ ...emptyEntrada, data: getDataAtual() });
-    setMsg('Entrada registrada.');
-    setTab('historico');
+    try {
+      await financeiroApi.createEntrada({
+        ...formE,
+        valor: parseValor(formE.valor),
+      });
+      setFormE({ ...emptyEntrada, data: getDataAtualIso() });
+      setMsg('Entrada registrada.');
+      setTab('historico');
+      await carregar();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : 'Erro ao registrar entrada.');
+    }
   }
 
-  function registrarSaida(e) {
+  async function registrarSaida(e) {
     e.preventDefault();
-    persist({
-      ...data,
-      saidas: [
-        {
-          id: Date.now(),
-          ...formS,
-          valor: parseValor(formS.valor),
-        },
-        ...data.saidas,
-      ],
-    });
-    setFormS({ ...emptySaida, data: getDataAtual() });
-    setMsg('Saída registrada.');
-    setTab('historico');
+    try {
+      await financeiroApi.createSaida({
+        ...formS,
+        valor: parseValor(formS.valor),
+      });
+      setFormS({ ...emptySaida, data: getDataAtualIso() });
+      setMsg('Saída registrada.');
+      setTab('historico');
+      await carregar();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : 'Erro ao registrar saída.');
+    }
   }
 
   const historico = [
@@ -98,7 +95,8 @@ export default function ApacFinanceiroPage() {
 
   return (
     <PageShell title="Financeiro" subtitle="Controle de entradas e saídas de caixa">
-      {msg && <div className="alert alert-success py-2">{msg}</div>}
+      <FeedbackAlert message={msg} />
+      <FeedbackAlert message={erro} variant="danger" />
 
       <StatRow
         items={[
@@ -224,6 +222,7 @@ export default function ApacFinanceiroPage() {
                 <div className="col-md-4">
                   <label className="form-label">Data</label>
                   <input
+                    type="date"
                     className="form-control"
                     value={formS.data}
                     onChange={(e) => setFormS({ ...formS, data: e.target.value })}

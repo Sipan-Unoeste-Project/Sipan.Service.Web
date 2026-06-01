@@ -1,59 +1,65 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
-
-const STORAGE_KEY = 'sipan_pessoas';
-
-function reducer(state, action) {
-  switch (action.type) {
-    case 'LOAD':
-      return action.payload;
-    case 'ADD':
-      return [...state, action.payload];
-    case 'UPDATE':
-      return state.map((p) => (p.id === action.payload.id ? action.payload : p));
-    case 'DELETE':
-      return state.filter((p) => p.id !== action.payload);
-    default:
-      return state;
-  }
-}
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { ApiError } from '../api/client';
+import * as pessoasApi from '../api/pessoasApi';
 
 const PessoasContext = createContext(null);
 
 export function PessoasProvider({ children }) {
-  const [pessoas, dispatch] = useReducer(reducer, []);
+  const [pessoas, setPessoas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    dispatch({
-      type: 'LOAD',
-      payload: stored ? JSON.parse(stored) : [],
-    });
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const lista = await pessoasApi.listPessoas();
+      setPessoas(lista);
+    } catch (err) {
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : 'Não foi possível carregar pessoas. Verifique se a API está em execução.';
+      setError(msg);
+      setPessoas([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(pessoas));
-  }, [pessoas]);
+    refresh();
+  }, [refresh]);
 
-  function addPessoa(data) {
-    const nova = {
-      ...data,
-      id: Date.now(),
-      criadoEm: new Date().toISOString().split('T')[0],
-    };
-    dispatch({ type: 'ADD', payload: nova });
+  async function addPessoa(data) {
+    const nova = await pessoasApi.createPessoa(data);
+    setPessoas((prev) => [...prev, nova]);
     return nova;
   }
 
-  function updatePessoa(data) {
-    dispatch({ type: 'UPDATE', payload: data });
+  async function updatePessoa(data) {
+    const atualizada = await pessoasApi.updatePessoa(data.id, data);
+    setPessoas((prev) => prev.map((p) => (p.id === atualizada.id ? atualizada : p)));
+    return atualizada;
   }
 
-  function deletePessoa(id) {
-    dispatch({ type: 'DELETE', payload: id });
+  async function deletePessoa(id) {
+    await pessoasApi.deletePessoa(id);
+    setPessoas((prev) => prev.filter((p) => p.id !== id));
   }
 
   return (
-    <PessoasContext.Provider value={{ pessoas, addPessoa, updatePessoa, deletePessoa }}>
+    <PessoasContext.Provider
+      value={{
+        pessoas,
+        loading,
+        error,
+        refresh,
+        addPessoa,
+        updatePessoa,
+        deletePessoa,
+      }}
+    >
       {children}
     </PessoasContext.Provider>
   );

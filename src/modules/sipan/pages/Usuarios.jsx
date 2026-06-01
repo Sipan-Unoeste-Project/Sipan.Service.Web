@@ -1,35 +1,60 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { ApiError } from '../../../api/client';
+import * as usuariosApi from '../../../api/usuariosApi';
 import PageShell from '../../../components/PageShell';
+import SimpleStatsRow from '../../../components/SimpleStatsRow';
+import ConfirmModal from '../../../components/ConfirmModal';
+import FeedbackAlert from '../../../components/FeedbackAlert';
+import Toast from '../../../components/Toast';
+import { useTimedMessage } from '../../../hooks/useTimedMessage';
 import FormUsuario from '../components/FormUsuario';
 import ListaUsuarios from '../components/ListaUsuarios';
 
-function Usuarios() {
-  const [usuarios, setUsuarios] = useState(() => {
-    const dadosSalvos = localStorage.getItem('usuarios');
-    return dadosSalvos ? JSON.parse(dadosSalvos) : [];
-  });
-
+export default function Usuarios() {
+  const [usuarios, setUsuarios] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState('');
-  const [editando, setEditando] = useState(null);
+  const [editandoId, setEditandoId] = useState(null);
+  const [excluirId, setExcluirId] = useState(null);
+  const [erro, setErro] = useTimedMessage(6000);
+  const [toast, setToast] = useTimedMessage(3500);
+
+  const carregar = useCallback(async () => {
+    setLoading(true);
+    try {
+      const lista = await usuariosApi.listUsuarios({ busca: busca || undefined });
+      setUsuarios(lista);
+    } catch (err) {
+      setErro(
+        err instanceof ApiError
+          ? err.message
+          : 'Não foi possível carregar usuários. Verifique se a API está em execução.'
+      );
+      setUsuarios([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [busca, setErro]);
 
   useEffect(() => {
-    localStorage.setItem('usuarios', JSON.stringify(usuarios));
-  }, [usuarios]);
+    const timer = setTimeout(carregar, busca ? 300 : 0);
+    return () => clearTimeout(timer);
+  }, [carregar, busca]);
 
-  function excluirUsuario(index) {
-    if (!window.confirm('Deseja excluir este usuário?')) return;
-    setUsuarios(usuarios.filter((_, i) => i !== index));
+  const excluirAlvo = excluirId ? usuarios.find((u) => u.id === excluirId) : null;
+
+  async function confirmarExclusao() {
+    if (!excluirId) return;
+    try {
+      await usuariosApi.deleteUsuario(excluirId);
+      setExcluirId(null);
+      setToast('Usuário excluído com sucesso.');
+      await carregar();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : 'Erro ao excluir usuário.');
+      setExcluirId(null);
+    }
   }
-
-  function editarUsuario(index) {
-    setEditando(index);
-  }
-
-  const usuariosFiltrados = usuarios.filter(
-    (usuario) =>
-      usuario.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      usuario.permissao.toLowerCase().includes(busca.toLowerCase())
-  );
 
   const ativos = usuarios.filter((u) => u.status === 'Ativo').length;
   const admins = usuarios.filter((u) => u.permissao === 'Administrador').length;
@@ -39,32 +64,15 @@ function Usuarios() {
       title="Usuários do sistema"
       subtitle="Controle de acesso e permissões"
     >
-      <div className="row g-3 mb-4">
-        <div className="col-md-4">
-          <div className="card border-0 shadow-sm text-center h-100">
-            <div className="card-body py-3">
-              <p className="text-muted small mb-1">Total</p>
-              <p className="fs-3 fw-bold mb-0">{usuarios.length}</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="card border-0 shadow-sm text-center h-100">
-            <div className="card-body py-3">
-              <p className="text-muted small mb-1">Ativos</p>
-              <p className="fs-3 fw-bold mb-0">{ativos}</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="card border-0 shadow-sm text-center h-100">
-            <div className="card-body py-3">
-              <p className="text-muted small mb-1">Administradores</p>
-              <p className="fs-3 fw-bold mb-0">{admins}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <SimpleStatsRow
+        items={[
+          { label: 'Total', value: loading ? '—' : usuarios.length },
+          { label: 'Ativos', value: ativos },
+          { label: 'Administradores', value: admins },
+        ]}
+      />
+
+      <FeedbackAlert message={erro} variant="danger" />
 
       <div className="mb-4">
         <input
@@ -80,19 +88,35 @@ function Usuarios() {
       <FormUsuario
         usuarios={usuarios}
         setUsuarios={setUsuarios}
-        editando={editando}
-        setEditando={setEditando}
+        editandoId={editandoId}
+        setEditandoId={setEditandoId}
+        onSuccess={(msg) => {
+          setToast(msg);
+          carregar();
+        }}
+        onError={setErro}
       />
 
       <div className="mt-4">
-        <ListaUsuarios
-          usuarios={usuariosFiltrados}
-          excluirUsuario={excluirUsuario}
-          editarUsuario={editarUsuario}
-        />
+        {loading ? (
+          <p className="text-muted">Carregando...</p>
+        ) : (
+          <ListaUsuarios
+            usuarios={usuarios}
+            onExcluir={setExcluirId}
+            onEditar={setEditandoId}
+          />
+        )}
       </div>
+
+      <ConfirmModal
+        show={!!excluirId}
+        nome={excluirAlvo?.nome}
+        onConfirm={confirmarExclusao}
+        onCancel={() => setExcluirId(null)}
+      />
+
+      <Toast message={toast} type="success" />
     </PageShell>
   );
 }
-
-export default Usuarios;

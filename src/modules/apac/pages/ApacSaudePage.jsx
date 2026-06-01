@@ -1,7 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { ApiError } from '../../../api/client';
+import * as saudeApi from '../../../api/saudeApi';
+import { getDataAtualIso } from '../../../utils/dates';
 import PageShell from '../../../components/PageShell';
 import ApacTabs from '../components/ApacTabs';
-import { loadSaude, saveSaude, getDataAtual } from '../storage/apacStorage';
+import FeedbackAlert from '../../../components/FeedbackAlert';
+import { useTimedMessage } from '../../../hooks/useTimedMessage';
 import { listarAnimais } from '../../animais/utils/storageAnimais';
 
 const TIPOS = [
@@ -15,73 +19,77 @@ const emptyReg = {
   tipo: 'consulta',
   titulo: '',
   descricao: '',
-  data: getDataAtual(),
+  data: getDataAtualIso(),
   vet: '',
 };
 
 export default function ApacSaudePage() {
   const [data, setData] = useState({ registros: [], vacinas: [] });
-  const [animalNome, setAnimalNome] = useState('');
+  const [animalId, setAnimalId] = useState(null);
   const [tab, setTab] = useState('atendimentos');
   const [form, setForm] = useState(emptyReg);
-  const [msg, setMsg] = useState('');
+  const [msg, setMsg] = useTimedMessage(3000);
+  const [erro, setErro] = useTimedMessage(6000);
+  const [animais, setAnimais] = useState([]);
 
   useEffect(() => {
-    const saude = loadSaude();
-    setData(saude);
-    const animais = listarAnimais();
-    if (animais.length > 0) {
-      setAnimalNome(saude.registros[0]?.animalNome || animais[0].nome);
-    } else if (saude.registros[0]) {
-      setAnimalNome(saude.registros[0].animalNome);
-    }
+    listarAnimais()
+      .then((lista) => {
+        setAnimais(lista);
+        if (lista.length > 0) {
+          setAnimalId((atual) => atual ?? lista[0].id);
+        }
+      })
+      .catch(() => setAnimais([]));
   }, []);
 
-  useEffect(() => {
-    if (msg) {
-      const t = setTimeout(() => setMsg(''), 3000);
-      return () => clearTimeout(t);
+  const carregarSaude = useCallback(async () => {
+    if (!animalId) return;
+    try {
+      const raw = await saudeApi.loadSaude(animalId);
+      setData(saudeApi.mapSaudeUi(raw));
+    } catch (err) {
+      setErro(
+        err instanceof ApiError
+          ? err.message
+          : 'Não foi possível carregar saúde animal. Execute database/apac_extended_schema.sql.'
+      );
     }
-  }, [msg]);
+  }, [animalId, setErro]);
 
-  const animais = listarAnimais();
-  const nomes = animais.map((a) => a.nome);
+  useEffect(() => {
+    carregarSaude();
+  }, [carregarSaude]);
 
-  function persist(next) {
-    setData(next);
-    saveSaude(next);
-  }
+  const animalSelecionado = animais.find((a) => a.id === animalId);
 
-  function salvarRegistro(e) {
+  async function salvarRegistro(e) {
     e.preventDefault();
-    persist({
-      ...data,
-      registros: [
-        {
-          id: Date.now(),
-          animalNome,
-          ...form,
-        },
-        ...data.registros,
-      ],
-    });
-    setForm({ ...emptyReg, data: getDataAtual() });
-    setMsg('Registro salvo.');
+    if (!animalId) return;
+    try {
+      await saudeApi.createRegistro(animalId, form);
+      setForm({ ...emptyReg, data: getDataAtualIso() });
+      setMsg('Registro salvo.');
+      await carregarSaude();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : 'Erro ao salvar registro.');
+    }
   }
 
-  const registrosAnimal = data.registros.filter((r) => r.animalNome === animalNome);
-  const vacinasAnimal = data.vacinas.filter((v) => v.animalNome === animalNome);
+  const registrosAnimal = data.registros;
+  const vacinasAnimal = data.vacinas;
 
   return (
     <PageShell title="Saúde animal" subtitle="Histórico veterinário por animal">
-      {msg && <div className="alert alert-success py-2">{msg}</div>}
+      <FeedbackAlert message={msg} />
+      <FeedbackAlert message={erro} variant="danger" />
 
       <div className="card border-0 shadow-sm mb-4">
         <div className="card-body d-flex flex-wrap align-items-center gap-3">
           <div className="fs-2">🐾</div>
           <div className="flex-grow-1">
             <label className="form-label small text-muted mb-1">Animal selecionado</label>
-            {nomes.length === 0 ? (
+            {animais.length === 0 ? (
               <p className="text-muted small mb-0">
                 Nenhum animal cadastrado. Use Cadastros → Animais.
               </p>
@@ -89,17 +97,20 @@ export default function ApacSaudePage() {
               <select
                 className="form-select"
                 style={{ maxWidth: 280 }}
-                value={animalNome}
-                onChange={(e) => setAnimalNome(e.target.value)}
+                value={animalId ?? ''}
+                onChange={(e) => setAnimalId(Number(e.target.value))}
               >
-                {nomes.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
+                {animais.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.nome}
                   </option>
                 ))}
               </select>
             )}
           </div>
+          {animalSelecionado && (
+            <span className="badge bg-light text-dark border">{animalSelecionado.especie}</span>
+          )}
         </div>
       </div>
 
@@ -144,6 +155,7 @@ export default function ApacSaudePage() {
                 <div className="col-md-4">
                   <label className="form-label">Data</label>
                   <input
+                    type="date"
                     className="form-control"
                     value={form.data}
                     onChange={(e) => setForm({ ...form, data: e.target.value })}
@@ -168,7 +180,7 @@ export default function ApacSaudePage() {
                   />
                 </div>
               </div>
-              <button type="submit" className="btn btn-success mt-3">
+              <button type="submit" className="btn btn-success mt-3" disabled={!animalId}>
                 Salvar registro
               </button>
             </form>
@@ -179,7 +191,9 @@ export default function ApacSaudePage() {
       {tab === 'atendimentos' && (
         <div className="list-group">
           {registrosAnimal.length === 0 ? (
-            <p className="text-muted">Nenhum atendimento para {animalNome}.</p>
+            <p className="text-muted">
+              Nenhum atendimento para {animalSelecionado?.nome ?? 'este animal'}.
+            </p>
           ) : (
             registrosAnimal.map((r) => {
               const tipo = TIPOS.find((t) => t.value === r.tipo) || TIPOS[0];
@@ -210,11 +224,11 @@ export default function ApacSaudePage() {
                   <div className="card-body">
                     <h6 className="fw-semibold">{v.nome}</h6>
                     <p className="small mb-1">Aplicada: {v.aplicada}</p>
-                    <p className="small mb-2">Próxima: {v.proxima}</p>
+                    <p className="small mb-2">Próxima: {v.proxima || '—'}</p>
                     <span
                       className={`badge ${v.status === 'em_dia' ? 'bg-success' : 'bg-warning text-dark'}`}
                     >
-                      {v.status === 'em_dia' ? 'Em dia' : 'A vencer'}
+                      {v.status === 'em_dia' ? 'Em dia' : v.status}
                     </span>
                   </div>
                 </div>

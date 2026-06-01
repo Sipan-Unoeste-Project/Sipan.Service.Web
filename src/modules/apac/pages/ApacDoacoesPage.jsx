@@ -1,12 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { ApiError } from '../../../api/client';
+import * as doacoesApi from '../../../api/doacoesApi';
 import PageShell from '../../../components/PageShell';
-import {
-  loadDoacoes,
-  saveDoacoes,
-  parseValor,
-  formatBRL,
-  getDataAtual,
-} from '../storage/apacStorage';
+import FeedbackAlert from '../../../components/FeedbackAlert';
+import { useTimedMessage } from '../../../hooks/useTimedMessage';
+import { parseValor, formatBRL } from '../storage/apacStorage';
 
 const PIX_KEY = 'apac@cananeia.org.br';
 
@@ -35,50 +33,57 @@ export default function ApacDoacoesPage() {
     mensagem: '',
     anonimo: false,
   });
-  const [msg, setMsg] = useState('');
+  const [msg, setMsg] = useTimedMessage(4000);
+  const [erro, setErro] = useTimedMessage(6000);
 
-  useEffect(() => {
-    setDoacoes(loadDoacoes());
-  }, []);
-
-  useEffect(() => {
-    if (msg) {
-      const t = setTimeout(() => setMsg(''), 4000);
-      return () => clearTimeout(t);
+  const carregar = useCallback(async () => {
+    try {
+      const lista = await doacoesApi.listDoacoes();
+      setDoacoes(lista.map(doacoesApi.mapDoacaoUi));
+    } catch (err) {
+      setErro(
+        err instanceof ApiError
+          ? err.message
+          : 'Não foi possível carregar doações. Verifique a API e o schema APAC.'
+      );
     }
-  }, [msg]);
+  }, [setErro]);
 
-  function enviarDinheiro(e) {
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
+
+  async function enviarDinheiro(e) {
     e.preventDefault();
-    const registro = {
-      id: Date.now(),
-      tipo: 'dinheiro',
-      data: getDataAtual(),
-      ...formD,
-      valor: parseValor(formD.valor),
-    };
-    const next = [registro, ...doacoes];
-    setDoacoes(next);
-    saveDoacoes(next);
-    setFormD(emptyDinheiro);
-    setMsg('Doação registrada. Use a chave PIX abaixo para concluir o pagamento.');
+    const valor = parseValor(formD.valor);
+    if (!Number.isFinite(valor) || valor <= 0) {
+      setErro('Informe um valor válido maior que zero.');
+      return;
+    }
+    try {
+      await doacoesApi.createDoacaoDinheiro({
+        ...formD,
+        valor,
+      });
+      setFormD(emptyDinheiro);
+      setMsg('Doação registrada. Use a chave PIX abaixo para concluir o pagamento.');
+      await carregar();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : 'Erro ao registrar doação.');
+    }
   }
 
-  function enviarProduto(e) {
+  async function enviarProduto(e) {
     e.preventDefault();
-    const registro = {
-      id: Date.now(),
-      tipo: 'produto',
-      data: getDataAtual(),
-      ...formP,
-      itens,
-    };
-    const next = [registro, ...doacoes];
-    setDoacoes(next);
-    saveDoacoes(next);
-    setFormP({ nome: '', telefone: '', email: '', mensagem: '', anonimo: false });
-    setItens([emptyItem]);
-    setMsg('Doação de produtos registrada. Entraremos em contato.');
+    try {
+      await doacoesApi.createDoacaoProduto(formP, itens);
+      setFormP({ nome: '', telefone: '', email: '', mensagem: '', anonimo: false });
+      setItens([emptyItem]);
+      setMsg('Doação de produtos registrada. Entraremos em contato.');
+      await carregar();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : 'Erro ao registrar doação.');
+    }
   }
 
   return (
@@ -86,7 +91,8 @@ export default function ApacDoacoesPage() {
       title="Doações"
       subtitle="Registre doações em dinheiro (PIX) ou produtos para o abrigo"
     >
-      {msg && <div className="alert alert-success py-2">{msg}</div>}
+      <FeedbackAlert message={msg} />
+      <FeedbackAlert message={erro} variant="danger" />
 
       <div className="btn-group mb-4" role="group">
         <button

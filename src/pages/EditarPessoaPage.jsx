@@ -1,4 +1,7 @@
+import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { ApiError } from '../api/client';
+import * as pessoasApi from '../api/pessoasApi';
 import { usePessoas } from '../context/PessoasContext';
 import PageShell from '../components/PageShell';
 import PessoaForm from '../components/PessoaForm';
@@ -7,12 +10,39 @@ export default function EditarPessoaPage() {
   const { id } = useParams();
   const { pessoas, updatePessoa } = usePessoas();
   const navigate = useNavigate();
+  const [pessoa, setPessoa] = useState(() => pessoas.find((p) => String(p.id) === id));
+  const [loading, setLoading] = useState(!pessoa);
+  const [erro, setErro] = useState('');
 
-  const pessoa = pessoas.find((p) => String(p.id) === id);
+  useEffect(() => {
+    if (pessoa) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await pessoasApi.getPessoa(id);
+        if (!cancelled) setPessoa(data);
+      } catch {
+        if (!cancelled) setPessoa(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, pessoa]);
 
   const existingCPFs = pessoas
     .filter((p) => String(p.id) !== id)
     .map((p) => p.cpf.replace(/\D/g, ''));
+
+  if (loading) {
+    return (
+      <PageShell title="Editar Pessoa">
+        <div className="text-muted py-4">Carregando...</div>
+      </PageShell>
+    );
+  }
 
   if (!pessoa) {
     return (
@@ -27,9 +57,14 @@ export default function EditarPessoaPage() {
     );
   }
 
-  function handleSubmit(data) {
-    updatePessoa({ ...pessoa, ...data });
-    navigate('/pessoas', { state: { toast: 'Pessoa atualizada com sucesso!' } });
+  async function handleSubmit(data) {
+    setErro('');
+    try {
+      await updatePessoa({ ...pessoa, ...data });
+      navigate('/pessoas', { state: { toast: 'Pessoa atualizada com sucesso!' } });
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : 'Erro ao atualizar pessoa.');
+    }
   }
 
   return (
@@ -42,6 +77,7 @@ export default function EditarPessoaPage() {
         </Link>
       }
     >
+      {erro && <div className="alert alert-danger py-2">{erro}</div>}
       <div className="card border-0 shadow-sm" style={{ maxWidth: 720 }}>
         <div className="card-body p-4">
           <PessoaForm

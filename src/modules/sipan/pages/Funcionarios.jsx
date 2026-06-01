@@ -1,67 +1,75 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { ApiError } from '../../../api/client';
+import * as funcionariosApi from '../../../api/funcionariosApi';
 import PageShell from '../../../components/PageShell';
+import SimpleStatsRow from '../../../components/SimpleStatsRow';
+import ConfirmModal from '../../../components/ConfirmModal';
+import FeedbackAlert from '../../../components/FeedbackAlert';
+import Toast from '../../../components/Toast';
+import { useTimedMessage } from '../../../hooks/useTimedMessage';
 import FormFuncionario from '../components/FormFuncionario';
 import ListaFuncionarios from '../components/ListaFuncionarios';
 
-function Funcionarios() {
-  const [funcionarios, setFuncionarios] = useState(() => {
-    const dadosSalvos = localStorage.getItem('funcionarios');
-    return dadosSalvos ? JSON.parse(dadosSalvos) : [];
-  });
-
+export default function Funcionarios() {
+  const [funcionarios, setFuncionarios] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState('');
-  const [editando, setEditando] = useState(null);
+  const [editandoId, setEditandoId] = useState(null);
+  const [excluirId, setExcluirId] = useState(null);
+  const [erro, setErro] = useTimedMessage(6000);
+  const [toast, setToast] = useTimedMessage(3500);
+
+  const carregar = useCallback(async () => {
+    setLoading(true);
+    try {
+      const lista = await funcionariosApi.listFuncionarios({ busca: busca || undefined });
+      setFuncionarios(lista);
+    } catch (err) {
+      setErro(
+        err instanceof ApiError
+          ? err.message
+          : 'Não foi possível carregar funcionários. Verifique se a API está em execução.'
+      );
+      setFuncionarios([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [busca, setErro]);
 
   useEffect(() => {
-    localStorage.setItem('funcionarios', JSON.stringify(funcionarios));
-  }, [funcionarios]);
+    const timer = setTimeout(carregar, busca ? 300 : 0);
+    return () => clearTimeout(timer);
+  }, [carregar, busca]);
 
-  function excluirFuncionario(index) {
-    if (!window.confirm('Deseja excluir este funcionário?')) return;
-    setFuncionarios(funcionarios.filter((_, i) => i !== index));
+  const excluirAlvo = excluirId ? funcionarios.find((f) => f.id === excluirId) : null;
+
+  async function confirmarExclusao() {
+    if (!excluirId) return;
+    try {
+      await funcionariosApi.deleteFuncionario(excluirId);
+      setExcluirId(null);
+      setToast('Funcionário excluído com sucesso.');
+      await carregar();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : 'Erro ao excluir funcionário.');
+      setExcluirId(null);
+    }
   }
-
-  function editarFuncionario(index) {
-    setEditando(index);
-  }
-
-  const funcionariosFiltrados = funcionarios.filter(
-    (funcionario) =>
-      funcionario.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      funcionario.cargo.toLowerCase().includes(busca.toLowerCase())
-  );
 
   const ativos = funcionarios.filter((f) => f.status === 'Ativo').length;
   const veterinarios = funcionarios.filter((f) => f.cargo === 'Veterinário').length;
 
   return (
     <PageShell title="Funcionários" subtitle="Equipe e cargos do abrigo">
-      <div className="row g-3 mb-4">
-        <div className="col-md-4">
-          <div className="card border-0 shadow-sm text-center h-100">
-            <div className="card-body py-3">
-              <p className="text-muted small mb-1">Total</p>
-              <p className="fs-3 fw-bold mb-0">{funcionarios.length}</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="card border-0 shadow-sm text-center h-100">
-            <div className="card-body py-3">
-              <p className="text-muted small mb-1">Ativos</p>
-              <p className="fs-3 fw-bold mb-0">{ativos}</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="card border-0 shadow-sm text-center h-100">
-            <div className="card-body py-3">
-              <p className="text-muted small mb-1">Veterinários</p>
-              <p className="fs-3 fw-bold mb-0">{veterinarios}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <SimpleStatsRow
+        items={[
+          { label: 'Total', value: loading ? '—' : funcionarios.length },
+          { label: 'Ativos', value: ativos },
+          { label: 'Veterinários', value: veterinarios },
+        ]}
+      />
+
+      <FeedbackAlert message={erro} variant="danger" />
 
       <div className="mb-4">
         <input
@@ -77,19 +85,35 @@ function Funcionarios() {
       <FormFuncionario
         funcionarios={funcionarios}
         setFuncionarios={setFuncionarios}
-        editando={editando}
-        setEditando={setEditando}
+        editandoId={editandoId}
+        setEditandoId={setEditandoId}
+        onSuccess={(msg) => {
+          setToast(msg);
+          carregar();
+        }}
+        onError={setErro}
       />
 
       <div className="mt-4">
-        <ListaFuncionarios
-          funcionarios={funcionariosFiltrados}
-          excluirFuncionario={excluirFuncionario}
-          editarFuncionario={editarFuncionario}
-        />
+        {loading ? (
+          <p className="text-muted">Carregando...</p>
+        ) : (
+          <ListaFuncionarios
+            funcionarios={funcionarios}
+            onExcluir={setExcluirId}
+            onEditar={setEditandoId}
+          />
+        )}
       </div>
+
+      <ConfirmModal
+        show={!!excluirId}
+        nome={excluirAlvo?.nome}
+        onConfirm={confirmarExclusao}
+        onCancel={() => setExcluirId(null)}
+      />
+
+      <Toast message={toast} type="success" />
     </PageShell>
   );
 }
-
-export default Funcionarios;

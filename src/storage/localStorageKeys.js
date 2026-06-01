@@ -1,18 +1,19 @@
-/** Chaves usadas pelo front enquanto o backend não está integrado. */
-export const LOCAL_STORAGE_KEYS = [
-  'sipan_pessoas',
-  'sipan_animais',
-  'usuarios',
-  'funcionarios',
-  'estoqueAPAC',
-  'apac_campanhas',
-  'apac_financeiro',
-  'apac_despesas',
-  'apac_doacoes',
-  'apac_saude',
-];
+/** Chaves legadas — o app não usa mais localStorage como fonte da verdade. */
+export const LOCAL_STORAGE_KEYS = [];
 
-/** Remove todos os dados locais de demonstração. */
 export function clearAllLocalData() {
-  LOCAL_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+  const legacy = [
+    'sipan_pessoas',
+    'sipan_usuarios',
+    'sipan_funcionarios',
+    'usuarios',
+    'funcionarios',
+    'estoqueAPAC',
+    'apac_campanhas',
+    'apac_financeiro',
+    'apac_despesas',
+    'apac_doacoes',
+    'apac_saude',
+  ];
+  legacy.forEach((key) => localStorage.removeItem(key));
 }

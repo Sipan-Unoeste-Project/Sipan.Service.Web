@@ -163,6 +163,7 @@ CREATE TABLE apac_estoque (
   unidade     ENUM('unidades', 'kg', 'litros', 'pacotes') NOT NULL DEFAULT 'unidades',
   validade    DATE            NULL,
   local       VARCHAR(120)    NULL,
+  limite_baixo_estoque INT UNSIGNED NOT NULL DEFAULT 5,
   status      ENUM('normal', 'baixo') NOT NULL DEFAULT 'normal',
   created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

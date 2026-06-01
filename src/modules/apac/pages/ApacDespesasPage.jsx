@@ -1,18 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { ApiError } from '../../../api/client';
+import * as despesasApi from '../../../api/despesasApi';
+import { getDataAtualIso } from '../../../utils/dates';
 import PageShell from '../../../components/PageShell';
 import ApacTabs from '../components/ApacTabs';
-import {
-  loadDespesas,
-  saveDespesas,
-  parseValor,
-  formatBRL,
-  getDataAtual,
-} from '../storage/apacStorage';
+import ConfirmModal from '../../../components/ConfirmModal';
+import FeedbackAlert from '../../../components/FeedbackAlert';
+import { useTimedMessage } from '../../../hooks/useTimedMessage';
+import { parseValor, formatBRL } from '../storage/apacStorage';
 
 const emptyDespesa = {
   categoria: 'Veterinário',
   valor: '',
-  data: getDataAtual(),
+  data: getDataAtualIso(),
   fornecedor: '',
   animal: '',
   pagamento: 'PIX',
@@ -24,61 +24,72 @@ export default function ApacDespesasPage() {
   const [tab, setTab] = useState('lista');
   const [form, setForm] = useState(emptyDespesa);
   const [novaCat, setNovaCat] = useState({ nome: '', descricao: '', icone: '📁' });
-  const [msg, setMsg] = useState('');
+  const [msg, setMsg] = useTimedMessage(3000);
+  const [erro, setErro] = useTimedMessage(6000);
+  const [excluirId, setExcluirId] = useState(null);
 
-  useEffect(() => {
-    setData(loadDespesas());
-  }, []);
-
-  useEffect(() => {
-    if (msg) {
-      const t = setTimeout(() => setMsg(''), 3000);
-      return () => clearTimeout(t);
+  const carregar = useCallback(async () => {
+    try {
+      const raw = await despesasApi.loadDespesas();
+      setData(despesasApi.mapDespesasUi(raw));
+    } catch (err) {
+      setErro(
+        err instanceof ApiError
+          ? err.message
+          : 'Não foi possível carregar despesas. Execute database/apac_extended_schema.sql.'
+      );
     }
-  }, [msg]);
+  }, [setErro]);
 
-  function persist(next) {
-    setData(next);
-    saveDespesas(next);
-  }
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
 
-  function salvarDespesa(e) {
+  async function salvarDespesa(e) {
     e.preventDefault();
-    persist({
-      ...data,
-      despesas: [
-        {
-          id: Date.now(),
-          ...form,
-          valor: parseValor(form.valor),
-        },
-        ...data.despesas,
-      ],
-    });
-    setForm({ ...emptyDespesa, data: getDataAtual() });
-    setMsg('Despesa registrada.');
-    setTab('lista');
+    try {
+      await despesasApi.createDespesa({
+        ...form,
+        valor: parseValor(form.valor),
+      });
+      setForm({ ...emptyDespesa, data: getDataAtualIso() });
+      setMsg('Despesa registrada.');
+      setTab('lista');
+      await carregar();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : 'Erro ao registrar despesa.');
+    }
   }
 
-  function salvarCategoria(e) {
+  async function salvarCategoria(e) {
     e.preventDefault();
-    persist({
-      ...data,
-      categorias: [...data.categorias, { id: Date.now(), ...novaCat }],
-    });
-    setNovaCat({ nome: '', descricao: '', icone: '📁' });
-    setMsg('Categoria adicionada.');
+    try {
+      await despesasApi.createCategoria(novaCat);
+      setNovaCat({ nome: '', descricao: '', icone: '📁' });
+      setMsg('Categoria adicionada.');
+      await carregar();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : 'Erro ao adicionar categoria.');
+    }
   }
 
-  function excluirDespesa(id) {
-    if (!window.confirm('Excluir despesa?')) return;
-    persist({ ...data, despesas: data.despesas.filter((d) => d.id !== id) });
-    setMsg('Despesa excluída.');
+  async function confirmarExclusao() {
+    if (!excluirId) return;
+    try {
+      await despesasApi.deleteDespesa(excluirId);
+      setExcluirId(null);
+      setMsg('Despesa excluída.');
+      await carregar();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : 'Erro ao excluir despesa.');
+      setExcluirId(null);
+    }
   }
 
   return (
     <PageShell title="Despesas" subtitle="Categorias e gastos do abrigo">
-      {msg && <div className="alert alert-success py-2">{msg}</div>}
+      <FeedbackAlert message={msg} />
+      <FeedbackAlert message={erro} variant="danger" />
 
       <ApacTabs
         active={tab}
@@ -120,6 +131,7 @@ export default function ApacDespesasPage() {
                 <div className="col-md-4">
                   <label className="form-label">Data</label>
                   <input
+                    type="date"
                     className="form-control"
                     value={form.data}
                     onChange={(e) => setForm({ ...form, data: e.target.value })}
@@ -252,7 +264,7 @@ export default function ApacDespesasPage() {
                       <button
                         type="button"
                         className="btn btn-sm btn-outline-danger"
-                        onClick={() => excluirDespesa(d.id)}
+                        onClick={() => setExcluirId(d.id)}
                       >
                         Excluir
                       </button>
@@ -264,6 +276,13 @@ export default function ApacDespesasPage() {
           </table>
         </div>
       )}
+
+      <ConfirmModal
+        show={!!excluirId}
+        message="Deseja excluir esta despesa?"
+        onConfirm={confirmarExclusao}
+        onCancel={() => setExcluirId(null)}
+      />
     </PageShell>
   );
 }

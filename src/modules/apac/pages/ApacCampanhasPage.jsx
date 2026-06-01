@@ -1,119 +1,118 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { ApiError } from '../../../api/client';
+import * as campanhasApi from '../../../api/campanhasApi';
+import { getDataAtualIso } from '../../../utils/dates';
 import PageShell from '../../../components/PageShell';
 import ApacTabs from '../components/ApacTabs';
-import {
-  loadCampanhas,
-  saveCampanhas,
-  parseValor,
-  getDataAtual,
-  formatBRL,
-} from '../storage/apacStorage';
+import ConfirmModal from '../../../components/ConfirmModal';
+import FeedbackAlert from '../../../components/FeedbackAlert';
+import { useTimedMessage } from '../../../hooks/useTimedMessage';
+import { parseValor, formatBRL } from '../storage/apacStorage';
 
-const emptyForm = { nome: '', descricao: '', data: getDataAtual(), meta: '' };
+const emptyForm = { nome: '', descricao: '', data: getDataAtualIso(), meta: '' };
 
 export default function ApacCampanhasPage() {
   const [dados, setDados] = useState({ ativas: [], encerradas: [] });
+  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('ativas');
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState(emptyForm);
-  const [msg, setMsg] = useState('');
+  const [msg, setMsg] = useTimedMessage(3000);
+  const [erro, setErro] = useTimedMessage(6000);
+  const [excluirId, setExcluirId] = useState(null);
 
-  useEffect(() => {
-    setDados(loadCampanhas());
-  }, []);
-
-  useEffect(() => {
-    if (msg) {
-      const t = setTimeout(() => setMsg(''), 3000);
-      return () => clearTimeout(t);
+  const carregar = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await campanhasApi.listCampanhas();
+      setDados({
+        ativas: (res.ativas || []).map(campanhasApi.mapCampanhaUi),
+        encerradas: (res.encerradas || []).map(campanhasApi.mapCampanhaUi),
+      });
+    } catch (err) {
+      setErro(
+        err instanceof ApiError
+          ? err.message
+          : 'Não foi possível carregar campanhas. Execute database/apac_schema.sql se necessário.'
+      );
+      setDados({ ativas: [], encerradas: [] });
+    } finally {
+      setLoading(false);
     }
-  }, [msg]);
+  }, [setErro]);
 
-  function persist(next) {
-    setDados(next);
-    saveCampanhas(next);
-  }
+  useEffect(() => {
+    if (tab !== 'nova') carregar();
+  }, [carregar, tab]);
 
   function abrirForm(campanha = null) {
     if (campanha) {
       setEditando(campanha);
       setForm({
         nome: campanha.nome,
-        descricao: campanha.descricao,
+        descricao: campanha.descricao || '',
         data: campanha.data,
         meta: String(campanha.meta),
       });
     } else {
       setEditando(null);
-      setForm({ ...emptyForm, data: getDataAtual() });
+      setForm({ ...emptyForm, data: getDataAtualIso() });
     }
     setTab('nova');
   }
 
-  function salvar(e) {
+  async function salvar(e) {
     e.preventDefault();
-    const meta = parseValor(form.meta);
-    if (editando) {
-      const atualizar = (lista) =>
-        lista.map((c) =>
-          c.id === editando.id
-            ? { ...c, nome: form.nome, descricao: form.descricao, data: form.data, meta }
-            : c
-        );
-      persist({
-        ativas: atualizar(dados.ativas),
-        encerradas: atualizar(dados.encerradas),
-      });
-      setMsg('Campanha atualizada.');
-    } else {
-      persist({
-        ...dados,
-        ativas: [
-          ...dados.ativas,
-          {
-            id: Date.now(),
-            nome: form.nome,
-            descricao: form.descricao,
-            data: form.data,
-            meta,
-            arrecadado: 0,
-            status: 'planejada',
-          },
-        ],
-      });
-      setMsg('Campanha criada.');
+    const body = campanhasApi.formToCampanhaBody(form, editando?.status || 'planejada');
+
+    try {
+      if (editando) {
+        await campanhasApi.updateCampanha(editando.id, body);
+        setMsg('Campanha atualizada.');
+      } else {
+        await campanhasApi.createCampanha(body);
+        setMsg('Campanha criada.');
+      }
+      setTab('ativas');
+      setEditando(null);
+      setForm({ ...emptyForm, data: getDataAtualIso() });
+      await carregar();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : 'Erro ao salvar campanha.');
     }
-    setTab('ativas');
-    setEditando(null);
-    setForm({ ...emptyForm, data: getDataAtual() });
   }
 
-  function excluir(id, tipo) {
-    if (!window.confirm('Excluir campanha?')) return;
-    persist({
-      ...dados,
-      ativas: tipo === 'ativas' ? dados.ativas.filter((c) => c.id !== id) : dados.ativas,
-      encerradas:
-        tipo === 'encerradas' ? dados.encerradas.filter((c) => c.id !== id) : dados.encerradas,
-    });
-    setMsg('Campanha excluída.');
+  async function confirmarExclusao() {
+    if (!excluirId) return;
+    try {
+      await campanhasApi.deleteCampanha(excluirId);
+      setExcluirId(null);
+      setMsg('Campanha excluída.');
+      await carregar();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : 'Erro ao excluir campanha.');
+      setExcluirId(null);
+    }
   }
 
-  function registrarDoacao(id) {
+  async function registrarDoacao(id) {
     const valor = window.prompt('Valor da doação (R$):');
     if (!valor) return;
     const v = parseValor(valor);
-    persist({
-      ...dados,
-      ativas: dados.ativas.map((c) =>
-        c.id === id ? { ...c, arrecadado: c.arrecadado + v } : c
-      ),
-    });
-    setMsg(`Doação de ${formatBRL(v)} registrada.`);
+    if (v <= 0) {
+      setErro('Informe um valor positivo.');
+      return;
+    }
+    try {
+      await campanhasApi.registrarDoacaoCampanha(id, v);
+      setMsg(`Doação de ${formatBRL(v)} registrada.`);
+      await carregar();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : 'Erro ao registrar doação.');
+    }
   }
 
   const lista = tab === 'encerradas' ? dados.encerradas : dados.ativas;
-  const tipoLista = tab === 'encerradas' ? 'encerradas' : 'ativas';
 
   return (
     <PageShell
@@ -125,7 +124,8 @@ export default function ApacCampanhasPage() {
         </button>
       }
     >
-      {msg && <div className="alert alert-success py-2">{msg}</div>}
+      <FeedbackAlert message={msg} />
+      <FeedbackAlert message={erro} variant="danger" />
 
       <ApacTabs
         active={tab}
@@ -152,8 +152,9 @@ export default function ApacCampanhasPage() {
                   />
                 </div>
                 <div className="col-md-3">
-                  <label className="form-label">Data</label>
+                  <label className="form-label">Data do evento</label>
                   <input
+                    type="date"
                     className="form-control"
                     value={form.data}
                     onChange={(e) => setForm({ ...form, data: e.target.value })}
@@ -176,7 +177,6 @@ export default function ApacCampanhasPage() {
                     rows={3}
                     value={form.descricao}
                     onChange={(e) => setForm({ ...form, descricao: e.target.value })}
-                    required
                   />
                 </div>
               </div>
@@ -187,7 +187,10 @@ export default function ApacCampanhasPage() {
                 <button
                   type="button"
                   className="btn btn-outline-secondary"
-                  onClick={() => setTab('ativas')}
+                  onClick={() => {
+                    setTab('ativas');
+                    setEditando(null);
+                  }}
                 >
                   Cancelar
                 </button>
@@ -199,7 +202,9 @@ export default function ApacCampanhasPage() {
 
       {(tab === 'ativas' || tab === 'encerradas') && (
         <div className="row g-3">
-          {lista.length === 0 ? (
+          {loading ? (
+            <div className="col-12 text-muted text-center py-4">Carregando...</div>
+          ) : lista.length === 0 ? (
             <div className="col-12 text-muted text-center py-4">Nenhuma campanha.</div>
           ) : (
             lista.map((c) => {
@@ -243,7 +248,7 @@ export default function ApacCampanhasPage() {
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-danger"
-                          onClick={() => excluir(c.id, tipoLista)}
+                          onClick={() => setExcluirId(c.id)}
                         >
                           Excluir
                         </button>
@@ -256,6 +261,13 @@ export default function ApacCampanhasPage() {
           )}
         </div>
       )}
+
+      <ConfirmModal
+        show={!!excluirId}
+        message="Deseja excluir esta campanha?"
+        onConfirm={confirmarExclusao}
+        onCancel={() => setExcluirId(null)}
+      />
     </PageShell>
   );
 }
