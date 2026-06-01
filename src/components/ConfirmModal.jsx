@@ -47,7 +47,7 @@ export default function ConfirmModal({
         aria-modal="true"
         style={{ zIndex: 1050 }}
       >
-        <div className="modal-dialog modal-dialog-centered">
+        <div className="modal-dialog modal-dialog-centered modal-sm">
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title">{title}</h5>
