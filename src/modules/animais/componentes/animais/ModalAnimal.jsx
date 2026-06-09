@@ -11,13 +11,24 @@ export default function ModalAnimal({ animal, onFechar, onEditar, onRequestExclu
       />
       <div
         className="modal fade show d-block"
-        tabIndex={-1}
-        style={{ zIndex: 1050 }}
+        tabIndex="-1"
         role="dialog"
         aria-modal="true"
+        style={{
+          zIndex: 1050,
+          position: 'fixed',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem',
+          width: '100%',
+          height: '100%',
+          margin: 0,
+        }}
       >
-        <div className="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-          <div className="modal-content">
+        <div className="modal-dialog modal-dialog-centered modal-sm" style={{ maxWidth: '900px' }}>
+          <div className="modal-content" style={{ maxHeight: 'calc(100vh - 40px)' }}>
             <div className="modal-header">
               <h5 className="modal-title">{animal.nome}</h5>
               <button type="button" className="btn-close" aria-label="Fechar" onClick={onFechar} />
@@ -60,6 +71,12 @@ export default function ModalAnimal({ animal, onFechar, onEditar, onRequestExclu
                   <p className="mb-2">
                     <strong>Vacinas:</strong> {animal.vacinas || 'Não informado'}
                   </p>
+                  <p className="mb-2">
+                    <strong>Data Acolhimento:</strong>{' '}
+                    {animal.dataAcolhimento
+                      ? new Date(animal.dataAcolhimento).toLocaleDateString('pt-BR')
+                      : 'Não informado'}
+                  </p>
                   <p className="mb-0">
                     <strong>Data cadastro:</strong>{' '}
                     {animal.dataCadastro
@@ -73,7 +90,7 @@ export default function ModalAnimal({ animal, onFechar, onEditar, onRequestExclu
                 <p className="mb-0">{animal.sobre || 'Sem descrição'}</p>
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
               <button
                 type="button"
                 className="btn btn-outline-danger"

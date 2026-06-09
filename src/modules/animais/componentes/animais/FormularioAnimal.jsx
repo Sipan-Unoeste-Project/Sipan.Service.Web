@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { adicionarAnimal, atualizarAnimal } from "../../utils/storageAnimais";
-import { modeloAnimal, portes, statusOptions } from "../../utils/modeloAnimal";
+import { modeloAnimal, portes } from "../../utils/modeloAnimal";
+import { ESPECIES } from "../../utils/especies";
+import { listarRacas, adicionarRaca } from "../../utils/racasStorage";
 
 const FormularioAnimal = ({
     animalParaEditar = null,
@@ -10,17 +12,33 @@ const FormularioAnimal = ({
 }) => {
     const [form, setForm] = useState(modeloAnimal);
     const [previewFoto, setPreviewFoto] = useState(null);
+    const [racas, setRacas] = useState([]);
     const [erros, setErros] = useState({});
+    const [showAddRaca, setShowAddRaca] = useState(false);
+    const [newRaca, setNewRaca] = useState('');
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [highlightIndex, setHighlightIndex] = useState(-1);
+    const inputRacaRef = useRef(null);
 
     useEffect(() => {
         if (animalParaEditar) {
             setForm({ ...modeloAnimal, ...animalParaEditar });
             if (animalParaEditar.foto) setPreviewFoto(animalParaEditar.foto);
+
+            if (animalParaEditar.especie) {
+                setRacas(listarRacas(animalParaEditar.especie));
+            }
         } else {
             setForm(modeloAnimal);
             setPreviewFoto(null);
         }
     }, [animalParaEditar]);
+
+    useEffect(() => {
+
+        if (form.especie) setRacas(listarRacas(form.especie));
+        else setRacas([]);
+    }, [form.especie]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -55,6 +73,20 @@ const FormularioAnimal = ({
         const hoje = new Date();
         hoje.setHours(0, 0, 0, 0);
 
+        // Validação de campos obrigatórios
+        if (!form.nome || !form.nome.trim()) {
+            novosErros.nome = "Campo obrigatório";
+        }
+
+        if (!form.especie || !form.especie.trim()) {
+            novosErros.especie = "Campo obrigatório";
+        }
+
+        if (!form.dataAcolhimento) {
+            novosErros.dataAcolhimento = "Campo obrigatório";
+        }
+
+        // Validação de datas
         if (form.dataNascimento) {
             const nascimento = new Date(form.dataNascimento);
             if (nascimento > hoje) {
@@ -79,8 +111,7 @@ const FormularioAnimal = ({
         }
 
         setErros(novosErros);
-        const errosExistem = !!novosErros.dataNascimento || !!novosErros.dataAcolhimento;
-        return !errosExistem;
+        return Object.keys(novosErros).length === 0;
     };
 
     const handleSubmit = async (e) => {
@@ -93,7 +124,6 @@ const FormularioAnimal = ({
             id: animalParaEditar?.id,
             dataNascimento: form.dataNascimento || null,
             dataAcolhimento: form.dataAcolhimento || null,
-            vacinas: form.vacinas || null,
             sobre: form.sobre || null,
             foto: form.foto || null,
         };
@@ -114,7 +144,7 @@ const FormularioAnimal = ({
                 setPreviewFoto(null);
             }
         } catch (error) {
-            onFeedback?.("Erro ao salvar o animal. Verifique se a API está em execução.", "error");
+            onFeedback?.("Preencha todos os campos obrigatórios.", "error");
             console.error(error);
         }
     };
@@ -123,7 +153,7 @@ const FormularioAnimal = ({
                 <form onSubmit={handleSubmit}>
                     <div className="row g-3">
                         <div className="col-12 col-md-6">
-                            <label className="form-label">Nome</label>
+                            <label className="form-label">Nome <span style={{ color: 'var(--bs-danger)' }}>*</span></label>
                             <input
                                 type="text"
                                 name="nome"
@@ -136,28 +166,134 @@ const FormularioAnimal = ({
                         </div>
 
                         <div className="col-12 col-md-6">
-                            <label className="form-label">Espécie</label>
-                            <input
-                                type="text"
+                            <label className="form-label">Espécie <span style={{ color: 'var(--bs-danger)' }}>*</span></label>
+                            <select
                                 name="especie"
                                 value={form.especie}
-                                onChange={handleChange}
-                                className="form-control"
-                                placeholder="Ex: Cachorro, Gato, Coelho..."
-                            />
+                                onChange={(e) => {
+                                    handleChange(e);
+                                    const nova = e.target.value;
+                                    setTimeout(() => {
+                                        // carregar raças da espécie selecionada
+                                        const list = listarRacas(nova);
+                                        setRacas(list);
+                                        // resetar raça quando muda espécie
+                                        setForm((prev) => ({ ...prev, raca: "" }));
+                                    }, 0);
+                                }}
+                                className="form-select"
+                            >
+                                <option value="">Selecione espécie</option>
+                                {ESPECIES.map((s) => (
+                                    <option key={s} value={s}>{s}</option>
+                                ))}
+                            </select>
                             {erros.especie && <div className="text-danger small mt-1">{erros.especie}</div>}
                         </div>
 
                         <div className="col-12 col-md-6">
                             <label className="form-label">Raça</label>
-                            <input
-                                type="text"
-                                name="raca"
-                                value={form.raca}
-                                onChange={handleChange}
-                                className="form-control"
-                                placeholder="Ex: SRD, Labrador, Siamese, Sem raça definida"
-                            />
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    ref={inputRacaRef}
+                                    type="text"
+                                    name="raca"
+                                    value={form.raca}
+                                    onChange={(e) => {
+                                        handleChange(e);
+                                        setShowSuggestions(true);
+                                        setHighlightIndex(-1);
+                                    }}
+                                    onFocus={() => { if (racas.length) setShowSuggestions(true); }}
+                                    onBlur={() => { setTimeout(() => setShowSuggestions(false), 150); }}
+                                    onKeyDown={(e) => {
+                                        const filtered = racas.filter(r => r.toLowerCase().includes((form.raca || '').toLowerCase()));
+                                        if (e.key === 'ArrowDown') {
+                                            e.preventDefault();
+                                            setHighlightIndex((i) => Math.min(i + 1, filtered.length - 1));
+                                            setShowSuggestions(true);
+                                        } else if (e.key === 'ArrowUp') {
+                                            e.preventDefault();
+                                            setHighlightIndex((i) => Math.max(i - 1, 0));
+                                        } else if (e.key === 'Enter') {
+                                            if (highlightIndex >= 0 && filtered[highlightIndex]) {
+                                                const sel = filtered[highlightIndex];
+                                                setForm((prev) => ({ ...prev, raca: sel }));
+                                                setShowSuggestions(false);
+                                                setHighlightIndex(-1);
+                                                e.preventDefault();
+                                            }
+                                        } else if (e.key === 'Escape') {
+                                            setShowSuggestions(false);
+                                            setHighlightIndex(-1);
+                                        }
+                                    }}
+                                    className="form-control"
+                                    placeholder={form.especie ? 'Digite para filtrar ou selecione' : 'Selecione a espécie primeiro'}
+                                    disabled={!form.especie}
+                                />
+
+                                <button
+                                    type="button"
+                                    title="Cadastrar raça"
+                                    style={{ position: 'absolute', right: 0, top: 0, borderColor: 'var(--primary)', fontSize: '1.5rem', borderRadius: 'var(--radius)', padding: '0 0.25rem' }}
+                                    onClick={() => {
+                                        if (!form.especie) {
+                                            onFeedback?.('Selecione a espécie antes de cadastrar uma raça', 'error');
+                                            return;
+                                        }
+                                        setShowAddRaca(true);
+                                        setNewRaca('');
+                                    }}
+                                >
+                                    +
+                                </button>
+
+                                {showSuggestions && form.especie && (
+                                    <ul className="autocomplete-list">
+                                        {racas.filter(r => r.toLowerCase().includes((form.raca || '').toLowerCase())).map((r, idx) => (
+                                            <li
+                                                key={r}
+                                                className={`autocomplete-item ${idx === highlightIndex ? 'highlight' : ''}`}
+                                                onMouseDown={() => {
+                                                    setForm((prev) => ({ ...prev, raca: r }));
+                                                    setShowSuggestions(false);
+                                                    setHighlightIndex(-1);
+                                                }}
+                                            >
+                                                {r}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+
+                            {showAddRaca && (
+                                <div className="mt-2 d-flex gap-2">
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder={`Nova raça para ${form.especie}`}
+                                        value={newRaca}
+                                        onChange={(e) => setNewRaca(e.target.value)}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="btn btn-primary"
+                                        onClick={() => {
+                                            const nome = (newRaca || '').trim();
+                                            if (!nome) return;
+                                            const novas = adicionarRaca(form.especie, nome);
+                                            setRacas(novas);
+                                            setForm((prev) => ({ ...prev, raca: nome }));
+                                            setShowAddRaca(false);
+                                            setNewRaca('');
+                                            onFeedback?.('Raça adicionada com sucesso', 'success');
+                                        }}
+                                    >Salvar</button>
+                                    <button type="button" className="btn btn-outline-secondary" onClick={() => setShowAddRaca(false)}>Cancelar</button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="col-12 col-md-6">
@@ -188,7 +324,7 @@ const FormularioAnimal = ({
                         </div>
 
                         <div className="col-12 col-md-6">
-                            <label className="form-label">Data de Acolhimento</label>
+                            <label className="form-label">Data de Acolhimento <span style={{ color: 'var(--bs-danger)' }}>*</span></label>
                             <input
                                 type="date"
                                 name="dataAcolhimento"
@@ -214,20 +350,6 @@ const FormularioAnimal = ({
                             </select>
                         </div>
 
-                        <div className="col-12 col-md-6">
-                            <label className="form-label">Status</label>
-                            <select
-                                name="status"
-                                value={form.status}
-                                onChange={handleChange}
-                                className="form-select"
-                            >
-                                {statusOptions.map((s) => (
-                                    <option key={s} value={s}>{s}</option>
-                                ))}
-                            </select>
-                        </div>
-
                         <div className="col-12">
                             <div className="form-check form-switch">
                                 <input
@@ -242,18 +364,6 @@ const FormularioAnimal = ({
                                     Castrado
                                 </label>
                             </div>
-                        </div>
-
-                        <div className="col-12">
-                            <label className="form-label">Vacinas</label>
-                            <input
-                                type="text"
-                                name="vacinas"
-                                value={form.vacinas}
-                                onChange={handleChange}
-                                className="form-control"
-                                placeholder="V8, Antirrábica, Giárdia, Leucemia felina..."
-                            />
                         </div>
 
                         <div className="col-12">

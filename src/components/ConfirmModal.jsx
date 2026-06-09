@@ -45,9 +45,24 @@ export default function ConfirmModal({
         tabIndex="-1"
         role="dialog"
         aria-modal="true"
-        style={{ zIndex: 1050 }}
+        style={{
+          zIndex: 1050,
+          position: 'fixed',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem',
+          width: '100%',
+          height: '100%',
+          margin: 0,
+        }}
       >
-        <div className="modal-dialog modal-dialog-centered modal-sm">
+        <div
+          className="modal-dialog modal-dialog-centered modal-sm"
+          style={{ margin: '0 auto', width: 'auto', maxWidth: '420px' }}
+          onClick={(event) => event.stopPropagation()}
+        >
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title">{title}</h5>
@@ -61,7 +76,7 @@ export default function ConfirmModal({
             <div className="modal-body">
               <p className="mb-0">{body}</p>
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
               <button type="button" className="btn btn-outline-secondary" onClick={onCancel}>
                 Cancelar
               </button>

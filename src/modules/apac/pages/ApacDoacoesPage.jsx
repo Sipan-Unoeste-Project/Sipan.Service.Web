@@ -6,7 +6,7 @@ import FeedbackAlert from '../../../components/FeedbackAlert';
 import { useTimedMessage } from '../../../hooks/useTimedMessage';
 import { parseValor, formatBRL } from '../storage/apacStorage';
 
-const PIX_KEY = 'apac@cananeia.org.br';
+const PIX_KEY = 'XPTO';
 
 const emptyDinheiro = {
   nome: '',
