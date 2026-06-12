@@ -11,7 +11,11 @@ import PessoasPage from './pages/PessoasPage';
 import NovaPessoaPage from './pages/NovaPessoaPage';
 import EditarPessoaPage from './pages/EditarPessoaPage';
 import Usuarios from './modules/sipan/pages/Usuarios';
+import NovoUsuarioPage from './modules/sipan/pages/NovoUsuarioPage';
+import EditarUsuarioPage from './modules/sipan/pages/EditarUsuarioPage';
 import Voluntarios from './modules/sipan/pages/Voluntarios';
+import NovoVoluntarioPage from './modules/sipan/pages/NovoVoluntarioPage';
+import EditarVoluntarioPage from './modules/sipan/pages/EditarVoluntarioPage';
 import PaginaAnimais from './modules/animais/paginas/PaginaAnimais';
 import ApacPainelPage from './modules/apac/pages/ApacPainelPage';
 import ApacDoacoesPage from './modules/apac/pages/ApacDoacoesPage';
@@ -21,7 +25,9 @@ import ApacFinanceiroPage from './modules/apac/pages/ApacFinanceiroPage';
 import ApacDespesasPage from './modules/apac/pages/ApacDespesasPage';
 import ApacSaudePage from './modules/apac/pages/ApacSaudePage';
 import ApacBalancetePage from './modules/apac/pages/ApacBalancetePage';
-import SolicitacaoAdocao from './modules/sipan/pages/SolicitacaoAdocao';
+import AdocoesPage from './modules/sipan/pages/AdocoesPage';
+import NovaSolicitacaoPage from './modules/sipan/pages/NovaSolicitacaoPage';
+import EditarSolicitacaoPage from './modules/sipan/pages/EditarSolicitacaoPage';
 
 function AppContent() {
   const location = useLocation();
@@ -42,11 +48,18 @@ function AppContent() {
       <Route path="/pessoas/:id/editar" element={<EditarPessoaPage />} />
 
       <Route path="/usuarios" element={<Usuarios />} />
+      <Route path="/usuarios/novo" element={<NovoUsuarioPage />} />
+      <Route path="/usuarios/:id/editar" element={<EditarUsuarioPage />} />
+
       <Route path="/funcionarios" element={<Voluntarios />} />
+      <Route path="/funcionarios/novo" element={<NovoVoluntarioPage />} />
+      <Route path="/funcionarios/:id/editar" element={<EditarVoluntarioPage />} />
 
       <Route path="/animais" element={<PaginaAnimais />} />
 
-      <Route path="/adocoes" element={<SolicitacaoAdocao />} />
+      <Route path="/adocoes" element={<AdocoesPage />} />
+      <Route path="/adocoes/nova" element={<NovaSolicitacaoPage />} />
+      <Route path="/adocoes/:id/editar" element={<EditarSolicitacaoPage />} />
 
       <Route path="/apac" element={<ApacPainelPage />} />
       <Route path="/apac/doacao" element={<ApacDoacoesPage />} />

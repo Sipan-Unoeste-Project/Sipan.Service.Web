@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { ApiError } from '../../../api/client';
 import * as saudeApi from '../../../api/saudeApi';
 import { getDataAtualIso } from '../../../utils/dates';
+import FormSelect from '../../../components/FormSelect';
 import PageShell from '../../../components/PageShell';
 import ApacTabs from '../components/ApacTabs';
 import FeedbackAlert from '../../../components/FeedbackAlert';
@@ -9,7 +10,7 @@ import { useTimedMessage } from '../../../hooks/useTimedMessage';
 import { listarAnimais } from '../../animais/utils/storageAnimais';
 
 const TIPOS = [
-  { value: 'consulta', label: 'Consulta', badge: 'bg-info' },
+  { value: 'consulta', label: 'Consulta', badge: 'bg-success-subtle text-success' },
   { value: 'vacina', label: 'Vacina', badge: 'bg-success' },
   { value: 'exame', label: 'Exame', badge: 'bg-warning text-dark' },
   { value: 'cirurgia', label: 'Cirurgia', badge: 'bg-danger' },
@@ -94,8 +95,7 @@ export default function ApacSaudePage() {
                 Nenhum animal cadastrado. Use Cadastros → Animais.
               </p>
             ) : (
-              <select
-                className="form-select"
+              <FormSelect
                 style={{ maxWidth: 280 }}
                 value={animalId ?? ''}
                 onChange={(e) => setAnimalId(Number(e.target.value))}
@@ -105,7 +105,7 @@ export default function ApacSaudePage() {
                     {a.nome}
                   </option>
                 ))}
-              </select>
+              </FormSelect>
             )}
           </div>
           {animalSelecionado && (
@@ -131,8 +131,7 @@ export default function ApacSaudePage() {
               <div className="row g-3">
                 <div className="col-md-3">
                   <label className="form-label">Tipo</label>
-                  <select
-                    className="form-select"
+                  <FormSelect
                     value={form.tipo}
                     onChange={(e) => setForm({ ...form, tipo: e.target.value })}
                   >
@@ -141,7 +140,7 @@ export default function ApacSaudePage() {
                         {t.label}
                       </option>
                     ))}
-                  </select>
+                  </FormSelect>
                 </div>
                 <div className="col-md-5">
                   <label className="form-label">Título</label>

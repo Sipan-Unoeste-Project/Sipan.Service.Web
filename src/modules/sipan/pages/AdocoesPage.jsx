@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ApiError } from '../../../api/client';
-import * as funcionariosApi from '../../../api/funcionariosApi';
+import * as adocoesApi from '../../../api/adocoesApi';
 import PageShell from '../../../components/PageShell';
 import FeedbackAlert from '../../../components/FeedbackAlert';
 import Toast from '../../../components/Toast';
-import VoluntarioTable from '../components/VoluntarioTable';
+import AdocaoTable from '../components/AdocaoTable';
 
-export default function Voluntarios() {
+export default function AdocoesPage() {
   const location = useLocation();
-  const [funcionarios, setFuncionarios] = useState([]);
+  const [solicitacoes, setSolicitacoes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [erroAcao, setErroAcao] = useState('');
@@ -20,17 +20,15 @@ export default function Voluntarios() {
     setLoading(true);
     setError('');
     try {
-      const lista = await funcionariosApi.listFuncionarios();
-      setFuncionarios(
-        lista.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }))
-      );
+      const lista = await adocoesApi.listAdocoes();
+      setSolicitacoes(lista);
     } catch (err) {
       setError(
         err instanceof ApiError
           ? err.message
-          : 'Não foi possível carregar voluntários. Verifique se a API está em execução.'
+          : 'Não foi possível carregar as solicitações. Verifique se a API está em execução.'
       );
-      setFuncionarios([]);
+      setSolicitacoes([]);
     } finally {
       setLoading(false);
     }
@@ -47,22 +45,17 @@ export default function Voluntarios() {
     }
   }, [toast]);
 
-  async function handleStatusChange(funcionario, status) {
-    if (funcionario.status === status) return;
+  async function handleStatusChange(solicitacao, status) {
+    if (solicitacao.status === status) return;
     setErroAcao('');
-    setSalvandoStatusId(funcionario.id);
+    setSalvandoStatusId(solicitacao.id);
     try {
-      const atualizado = await funcionariosApi.updateFuncionario(funcionario.id, {
-        nome: funcionario.nome,
-        cpf: funcionario.cpf,
-        cargo: funcionario.cargo,
-        telefone: funcionario.telefone,
-        status,
-      });
-      setFuncionarios((prev) =>
-        prev
-          .map((f) => (f.id === funcionario.id ? atualizado : f))
-          .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }))
+      const atualizado = await adocoesApi.updateAdocao(
+        solicitacao.id,
+        adocoesApi.toAdocaoBody({ ...solicitacao, status })
+      );
+      setSolicitacoes((prev) =>
+        prev.map((s) => (s.id === solicitacao.id ? atualizado : s))
       );
     } catch (err) {
       setErroAcao(err instanceof ApiError ? err.message : 'Erro ao alterar status.');
@@ -74,21 +67,21 @@ export default function Voluntarios() {
   async function handleDelete(id) {
     setErroAcao('');
     try {
-      await funcionariosApi.deleteFuncionario(id);
-      setFuncionarios((prev) => prev.filter((f) => f.id !== id));
-      setToast('Voluntário excluído com sucesso.');
+      await adocoesApi.deleteAdocao(id);
+      setSolicitacoes((prev) => prev.filter((s) => s.id !== id));
+      setToast('Solicitação excluída com sucesso.');
     } catch (err) {
-      setErroAcao(err instanceof ApiError ? err.message : 'Erro ao excluir voluntário.');
+      setErroAcao(err instanceof ApiError ? err.message : 'Erro ao excluir solicitação.');
     }
   }
 
   return (
     <PageShell
-      title="Voluntários"
-      subtitle="Cadastro e gerenciamento dos voluntários do abrigo"
+      title="Solicitações de Adoção"
+      subtitle="Registro e acompanhamento das solicitações de adoção de animais"
       action={
-        <Link to="/funcionarios/novo" className="btn btn-success">
-          + Novo Voluntário
+        <Link to="/adocoes/nova" className="btn btn-success">
+          + Nova Solicitação
         </Link>
       }
     >
@@ -98,10 +91,10 @@ export default function Voluntarios() {
       <div className="card border-0 shadow-sm">
         <div className="card-body p-3">
           {loading ? (
-            <p className="text-muted mb-0 py-3 text-center">Carregando voluntários...</p>
+            <p className="text-muted mb-0 py-3 text-center">Carregando solicitações...</p>
           ) : (
-            <VoluntarioTable
-              funcionarios={funcionarios}
+            <AdocaoTable
+              solicitacoes={solicitacoes}
               onDelete={handleDelete}
               onStatusChange={handleStatusChange}
               salvandoStatusId={salvandoStatusId}

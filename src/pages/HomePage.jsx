@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 
 const cadastros = [
-  { to: '/pessoas', title: 'Pessoas', desc: 'Doadores, adotantes e voluntários' },
+  { to: '/pessoas', title: 'Pessoas', desc: 'Doadores e adotantes' },
   { to: '/animais', title: 'Animais', desc: 'Cadastro e acompanhamento dos animais' },
   { to: '/adocoes', title: 'Adoções', desc: 'Solicitações e acompanhamento de adoções' },
   { to: '/usuarios', title: 'Usuários', desc: 'Acesso ao sistema e permissões' },

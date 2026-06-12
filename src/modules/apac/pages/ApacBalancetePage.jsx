@@ -73,7 +73,7 @@ export default function ApacBalancetePage() {
             items={[
               { label: 'Total entradas', value: formatBRL(resumo.entradas), valueClass: 'text-success' },
               { label: 'Total saídas', value: formatBRL(resumo.totalSaidas), valueClass: 'text-danger' },
-              { label: 'Saldo', value: formatBRL(resumo.saldo), valueClass: 'text-primary' },
+              { label: 'Saldo', value: formatBRL(resumo.saldo), valueClass: 'text-success' },
               {
                 label: 'Taxa de gastos',
                 value: `${resumo.taxa}%`,

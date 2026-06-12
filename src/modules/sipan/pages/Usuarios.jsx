@@ -1,243 +1,113 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { ApiError } from '../../../api/client';
 import * as usuariosApi from '../../../api/usuariosApi';
 import PageShell from '../../../components/PageShell';
-import ConfirmModal from '../../../components/ConfirmModal';
 import FeedbackAlert from '../../../components/FeedbackAlert';
 import Toast from '../../../components/Toast';
-import { useTimedMessage } from '../../../hooks/useTimedMessage';
-import FormUsuario from '../components/FormUsuario';
-import ListaUsuarios from '../components/ListaUsuarios';
+import UsuarioTable from '../components/UsuarioTable';
 
 export default function Usuarios() {
+  const location = useLocation();
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [busca, setBusca] = useState('');
-  const [statusFiltro, setStatusFiltro] = useState('');
-  const [permissaoFiltro, setPermissaoFiltro] = useState('');
-  const [editandoId, setEditandoId] = useState(null);
-  const [excluirId, setExcluirId] = useState(null);
-  const [erro, setErro] = useTimedMessage(6000);
-  const [toast, setToast] = useTimedMessage(3500);
+  const [error, setError] = useState('');
+  const [erroAcao, setErroAcao] = useState('');
+  const [toast, setToast] = useState(location.state?.toast || '');
+  const [salvandoStatusId, setSalvandoStatusId] = useState(null);
 
   const carregar = useCallback(async () => {
     setLoading(true);
-
+    setError('');
     try {
-      const lista = await usuariosApi.listUsuarios({
-        busca: busca || undefined,
-      });
-
-      let resultado = [...lista];
-
-      if (statusFiltro) {
-        resultado = resultado.filter(
-          (u) => u.status === statusFiltro
-        );
-      }
-
-      if (permissaoFiltro) {
-        resultado = resultado.filter(
-          (u) => u.permissao === permissaoFiltro
-        );
-      }
-
-      setUsuarios(resultado);
+      const lista = await usuariosApi.listUsuarios();
+      setUsuarios(
+        lista.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }))
+      );
     } catch (err) {
-      setErro(
+      setError(
         err instanceof ApiError
           ? err.message
-          : 'Não foi possível carregar usuários.'
+          : 'Não foi possível carregar usuários. Verifique se a API está em execução.'
       );
-
       setUsuarios([]);
     } finally {
       setLoading(false);
     }
-  }, [busca, statusFiltro, permissaoFiltro, setErro]);
+  }, []);
 
   useEffect(() => {
-    const timer = setTimeout(carregar, busca ? 300 : 0);
-    return () => clearTimeout(timer);
-  }, [carregar, busca]);
+    carregar();
+  }, [carregar]);
 
-  const excluirAlvo = excluirId
-    ? usuarios.find((u) => u.id === excluirId)
-    : null;
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(''), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
-  async function confirmarExclusao() {
-    if (!excluirId) return;
-
+  async function handleStatusChange(usuario, status) {
+    if (usuario.status === status) return;
+    setErroAcao('');
+    setSalvandoStatusId(usuario.id);
     try {
-      await usuariosApi.deleteUsuario(excluirId);
-
-      setExcluirId(null);
-      setToast('Usuário excluído com sucesso.');
-
-      await carregar();
-    } catch (err) {
-      setErro(
-        err instanceof ApiError
-          ? err.message
-          : 'Erro ao excluir usuário.'
+      const atualizado = await usuariosApi.updateUsuario(
+        usuario.id,
+        usuariosApi.toUsuarioBody({ ...usuario, status, senha: '' })
       );
-
-      setExcluirId(null);
+      setUsuarios((prev) =>
+        prev
+          .map((u) => (u.id === usuario.id ? atualizado : u))
+          .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }))
+      );
+    } catch (err) {
+      setErroAcao(err instanceof ApiError ? err.message : 'Erro ao alterar status.');
+    } finally {
+      setSalvandoStatusId(null);
     }
   }
 
-  function limparFiltros() {
-    setBusca('');
-    setStatusFiltro('');
-    setPermissaoFiltro('');
+  async function handleDelete(id) {
+    setErroAcao('');
+    try {
+      await usuariosApi.deleteUsuario(id);
+      setUsuarios((prev) => prev.filter((u) => u.id !== id));
+      setToast('Usuário excluído com sucesso.');
+    } catch (err) {
+      setErroAcao(err instanceof ApiError ? err.message : 'Erro ao excluir usuário.');
+    }
   }
 
   return (
     <PageShell
-      title="Usuários do Sistema"
-      subtitle="Controle de acesso e permissões"
+      title="Usuários"
+      subtitle="Controle de acesso e permissões do sistema"
+      action={
+        <Link to="/usuarios/novo" className="btn btn-success">
+          + Novo Usuário
+        </Link>
+      }
     >
-      <FeedbackAlert
-        message={erro}
-        variant="danger"
-      />
+      <FeedbackAlert message={error} variant="danger" />
+      <FeedbackAlert message={erroAcao} variant="danger" />
 
-      <div className="card border-0 shadow-sm mb-4">
-        <div className="card-body">
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h5 className="mb-0">
-              Filtros
-            </h5>
-
-            <button
-              className="btn btn-outline-secondary"
-              onClick={limparFiltros}
-            >
-              Limpar
-            </button>
-          </div>
-
-          <div className="row g-3">
-            <div className="col-md-4">
-              <label className="form-label">
-                Buscar
-              </label>
-
-              <input
-                type="search"
-                className="form-control"
-                placeholder="Nome, login ou e-mail..."
-                value={busca}
-                onChange={(e) =>
-                  setBusca(e.target.value)
-                }
-              />
-            </div>
-
-            <div className="col-md-4">
-              <label className="form-label">
-                Permissão
-              </label>
-
-              <select
-                className="form-select"
-                value={permissaoFiltro}
-                onChange={(e) =>
-                  setPermissaoFiltro(
-                    e.target.value
-                  )
-                }
-              >
-                <option value="">
-                  Todas as permissões
-                </option>
-
-                <option value="Administrador">
-                  Administrador
-                </option>
-
-                <option value="Financeiro">
-                  Financeiro
-                </option>
-
-                <option value="Veterinário">
-                  Veterinário
-                </option>
-
-                <option value="Voluntário">
-                  Voluntário
-                </option>
-              </select>
-            </div>
-
-            <div className="col-md-4">
-              <label className="form-label">
-                Status
-              </label>
-
-              <select
-                className="form-select"
-                value={statusFiltro}
-                onChange={(e) =>
-                  setStatusFiltro(
-                    e.target.value
-                  )
-                }
-              >
-                <option value="">
-                  Todos
-                </option>
-
-                <option value="Ativo">
-                  Ativo
-                </option>
-
-                <option value="Inativo">
-                  Inativo
-                </option>
-              </select>
-            </div>
-          </div>
+      <div className="card border-0 shadow-sm">
+        <div className="card-body p-3">
+          {loading ? (
+            <p className="text-muted mb-0 py-3 text-center">Carregando usuários...</p>
+          ) : (
+            <UsuarioTable
+              usuarios={usuarios}
+              onDelete={handleDelete}
+              onStatusChange={handleStatusChange}
+              salvandoStatusId={salvandoStatusId}
+            />
+          )}
         </div>
       </div>
 
-      <FormUsuario
-        usuarios={usuarios}
-        setUsuarios={setUsuarios}
-        editandoId={editandoId}
-        setEditandoId={setEditandoId}
-        onSuccess={(msg) => {
-          setToast(msg);
-          carregar();
-        }}
-        onError={setErro}
-      />
-
-      <div className="mt-4">
-        {loading ? (
-          <p className="text-muted">
-            Carregando...
-          </p>
-        ) : (
-          <ListaUsuarios
-            usuarios={usuarios}
-            onExcluir={setExcluirId}
-            onEditar={setEditandoId}
-          />
-        )}
-      </div>
-
-      <ConfirmModal
-        show={!!excluirId}
-        nome={excluirAlvo?.nome}
-        onConfirm={confirmarExclusao}
-        onCancel={() => setExcluirId(null)}
-      />
-
-      <Toast
-        message={toast}
-        type="success"
-      />
+      <Toast message={toast} type="success" />
     </PageShell>
   );
 }

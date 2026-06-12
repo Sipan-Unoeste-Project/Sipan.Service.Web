@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ApiError } from '../../../api/client';
 import * as estoqueApi from '../../../api/estoqueApi';
+import FormSelect from '../../../components/FormSelect';
 import PageShell from '../../../components/PageShell';
 import ApacTabs from '../components/ApacTabs';
 import ConfirmModal from '../../../components/ConfirmModal';
@@ -149,8 +150,7 @@ export default function ApacEstoquePage() {
                 </div>
                 <div className="col-md-6">
                   <label className="form-label">Categoria</label>
-                  <select
-                    className="form-select"
+                  <FormSelect
                     value={form.categoria}
                     onChange={(e) => setForm({ ...form, categoria: e.target.value })}
                   >
@@ -159,7 +159,7 @@ export default function ApacEstoquePage() {
                         {c.label}
                       </option>
                     ))}
-                  </select>
+                  </FormSelect>
                 </div>
                 <div className="col-md-3">
                   <label className="form-label">Quantidade</label>
@@ -174,8 +174,7 @@ export default function ApacEstoquePage() {
                 </div>
                 <div className="col-md-3">
                   <label className="form-label">Unidade</label>
-                  <select
-                    className="form-select"
+                  <FormSelect
                     value={form.unidade}
                     onChange={(e) => setForm({ ...form, unidade: e.target.value })}
                   >
@@ -183,7 +182,7 @@ export default function ApacEstoquePage() {
                     <option value="kg">kg</option>
                     <option value="litros">litros</option>
                     <option value="pacotes">pacotes</option>
-                  </select>
+                  </FormSelect>
                 </div>
                 <div className="col-md-3">
                   <label className="form-label">Validade</label>
@@ -259,7 +258,7 @@ export default function ApacEstoquePage() {
                     <td className="text-end">
                       <button
                         type="button"
-                        className="btn btn-sm btn-outline-primary me-1"
+                        className="btn btn-sm btn-outline-success me-1"
                         onClick={() => abrirForm(item)}
                       >
                         Editar

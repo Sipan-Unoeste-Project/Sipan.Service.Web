@@ -14,7 +14,7 @@ docker compose up -d
 #    - ou apac_schema.sql na API + database/apac_extended_schema.sql
 #
 #    Banco já existente (Docker antigo): rode as migrações em database/migrations/
-#    Ex.: 001_apac_estoque_limite_baixo.sql — coluna limite_baixo_estoque em apac_estoque
+#    Ex.: 001_apac_estoque_limite_baixo.sql, 002_pessoas_endereco.sql, 003_pessoa_tipos.sql
 
 # 3. API
 cd ../Sipan.Service.Api

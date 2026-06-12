@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { ApiError } from '../../../api/client';
 import * as despesasApi from '../../../api/despesasApi';
 import { getDataAtualIso } from '../../../utils/dates';
+import FormSelect from '../../../components/FormSelect';
 import PageShell from '../../../components/PageShell';
 import ApacTabs from '../components/ApacTabs';
 import ConfirmModal from '../../../components/ConfirmModal';
@@ -108,8 +109,7 @@ export default function ApacDespesasPage() {
               <div className="row g-3">
                 <div className="col-md-4">
                   <label className="form-label">Categoria</label>
-                  <select
-                    className="form-select"
+                  <FormSelect
                     value={form.categoria}
                     onChange={(e) => setForm({ ...form, categoria: e.target.value })}
                   >
@@ -117,7 +117,7 @@ export default function ApacDespesasPage() {
                       <option key={c.id}>{c.nome}</option>
                     ))}
                     <option>Outro</option>
-                  </select>
+                  </FormSelect>
                 </div>
                 <div className="col-md-4">
                   <label className="form-label">Valor (R$)</label>
@@ -156,8 +156,7 @@ export default function ApacDespesasPage() {
                 </div>
                 <div className="col-md-6">
                   <label className="form-label">Pagamento</label>
-                  <select
-                    className="form-select"
+                  <FormSelect
                     value={form.pagamento}
                     onChange={(e) => setForm({ ...form, pagamento: e.target.value })}
                   >
@@ -165,7 +164,7 @@ export default function ApacDespesasPage() {
                     <option>Dinheiro</option>
                     <option>Cartão</option>
                     <option>Transferência</option>
-                  </select>
+                  </FormSelect>
                 </div>
                 <div className="col-12">
                   <label className="form-label">Descrição</label>

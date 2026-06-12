@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ApiError } from '../../../api/client';
 import * as doacoesApi from '../../../api/doacoesApi';
+import FormSelect from '../../../components/FormSelect';
 import PageShell from '../../../components/PageShell';
 import FeedbackAlert from '../../../components/FeedbackAlert';
 import { useTimedMessage } from '../../../hooks/useTimedMessage';
@@ -156,15 +157,14 @@ export default function ApacDoacoesPage() {
                 </div>
                 <div className="col-md-3">
                   <label className="form-label">Pagamento</label>
-                  <select
-                    className="form-select"
+                  <FormSelect
                     value={formD.pagamento}
                     onChange={(e) => setFormD({ ...formD, pagamento: e.target.value })}
                   >
                     <option>PIX</option>
                     <option>Transferência</option>
                     <option>Dinheiro</option>
-                  </select>
+                  </FormSelect>
                 </div>
                 <div className="col-12">
                   <div className="form-check">
@@ -219,8 +219,7 @@ export default function ApacDoacoesPage() {
               {itens.map((item, idx) => (
                 <div className="row g-2 mb-2" key={idx}>
                   <div className="col-md-5">
-                    <select
-                      className="form-select"
+                    <FormSelect
                       value={item.produto}
                       onChange={(e) => {
                         const n = [...itens];
@@ -233,7 +232,7 @@ export default function ApacDoacoesPage() {
                       <option>Medicamentos</option>
                       <option>Material de limpeza</option>
                       <option>Outro</option>
-                    </select>
+                    </FormSelect>
                   </div>
                   <div className="col-md-3">
                     <input
@@ -248,8 +247,7 @@ export default function ApacDoacoesPage() {
                     />
                   </div>
                   <div className="col-md-3">
-                    <select
-                      className="form-select"
+                    <FormSelect
                       value={item.unidade}
                       onChange={(e) => {
                         const n = [...itens];
@@ -260,7 +258,7 @@ export default function ApacDoacoesPage() {
                       <option>Unidade(s)</option>
                       <option>Kg</option>
                       <option>Pacote(s)</option>
-                    </select>
+                    </FormSelect>
                   </div>
                   {itens.length > 1 && (
                     <div className="col-md-1">

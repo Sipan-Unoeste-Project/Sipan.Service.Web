@@ -27,3 +27,12 @@ export function maskPhone(value) {
     return `(${digits}`;
   return digits;
 }
+
+/**
+ * Aplica máscara de CEP: 00000-000
+ */
+export function maskCEP(value) {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length > 5) return digits.replace(/(\d{5})(\d{1,3})/, '$1-$2');
+  return digits;
+}
