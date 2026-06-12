@@ -14,7 +14,6 @@ export default function AdocoesPage() {
   const [error, setError] = useState('');
   const [erroAcao, setErroAcao] = useState('');
   const [toast, setToast] = useState(location.state?.toast || '');
-  const [salvandoStatusId, setSalvandoStatusId] = useState(null);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -44,25 +43,6 @@ export default function AdocoesPage() {
       return () => clearTimeout(timer);
     }
   }, [toast]);
-
-  async function handleStatusChange(solicitacao, status) {
-    if (solicitacao.status === status) return;
-    setErroAcao('');
-    setSalvandoStatusId(solicitacao.id);
-    try {
-      const atualizado = await adocoesApi.updateAdocao(
-        solicitacao.id,
-        adocoesApi.toAdocaoBody({ ...solicitacao, status })
-      );
-      setSolicitacoes((prev) =>
-        prev.map((s) => (s.id === solicitacao.id ? atualizado : s))
-      );
-    } catch (err) {
-      setErroAcao(err instanceof ApiError ? err.message : 'Erro ao alterar status.');
-    } finally {
-      setSalvandoStatusId(null);
-    }
-  }
 
   async function handleDelete(id) {
     setErroAcao('');
@@ -96,8 +76,6 @@ export default function AdocoesPage() {
             <AdocaoTable
               solicitacoes={solicitacoes}
               onDelete={handleDelete}
-              onStatusChange={handleStatusChange}
-              salvandoStatusId={salvandoStatusId}
             />
           )}
         </div>

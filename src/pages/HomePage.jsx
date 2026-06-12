@@ -1,23 +1,6 @@
 import { Link } from 'react-router-dom';
-
-const cadastros = [
-  { to: '/pessoas', title: 'Pessoas', desc: 'Doadores e adotantes' },
-  { to: '/animais', title: 'Animais', desc: 'Cadastro e acompanhamento dos animais' },
-  { to: '/adocoes', title: 'Adoções', desc: 'Solicitações e acompanhamento de adoções' },
-  { to: '/usuarios', title: 'Usuários', desc: 'Acesso ao sistema e permissões' },
-  { to: '/funcionarios', title: 'Voluntários', desc: 'Equipe e voluntários do abrigo' },
-];
-
-const apac = [
-  { to: '/apac', title: 'Painel APAC', desc: 'Visão geral do módulo' },
-  { to: '/apac/doacao', title: 'Doações', desc: 'Dinheiro, PIX e produtos' },
-  { to: '/apac/campanhas', title: 'Campanhas', desc: 'Eventos e metas' },
-  { to: '/apac/estoque', title: 'Estoque', desc: 'Produtos e insumos' },
-  { to: '/apac/financeiro', title: 'Financeiro', desc: 'Entradas e saídas' },
-  { to: '/apac/despesas', title: 'Despesas', desc: 'Controle de gastos' },
-  { to: '/apac/saude', title: 'Saúde animal', desc: 'Histórico veterinário' },
-  { to: '/apac/balancete', title: 'Balancete', desc: 'Relatório consolidado' },
-];
+import { useNavSearch } from '../context/NavSearchContext';
+import { homeSectionsFromOptions } from '../data/navOptions';
 
 function SectionCard({ to, title, desc }) {
   return (
@@ -35,32 +18,60 @@ function SectionCard({ to, title, desc }) {
 }
 
 export default function HomePage() {
+  const { opcoesFiltradas, buscaAtiva, termo } = useNavSearch();
+  const { cadastros, apac } = homeSectionsFromOptions(opcoesFiltradas);
+  const nenhumResultado = buscaAtiva && cadastros.length === 0 && apac.length === 0;
+
   return (
     <div className="container py-4">
       <div className="mb-4">
         <h1 className="fw-bold mb-1">Início</h1>
         <p className="text-muted mb-0">
-          Sistema Integrado de Proteção Animal — escolha uma área abaixo.
+          {buscaAtiva
+            ? `Opções encontradas para “${termo.trim()}”.`
+            : 'Sistema Integrado de Proteção Animal — escolha uma área abaixo.'}
         </p>
       </div>
 
-      <section className="mb-5">
-        <h2 className="h5 text-muted text-uppercase mb-3">Cadastros</h2>
-        <div className="row g-3">
-          {cadastros.map((item) => (
-            <SectionCard key={item.to} {...item} />
-          ))}
+      {nenhumResultado ? (
+        <div className="alert alert-light border text-muted mb-0">
+          Nenhuma opção corresponde à busca. Clique no ✕ para voltar ao início.
         </div>
-      </section>
+      ) : (
+        <>
+          {cadastros.length > 0 && (
+            <section className="mb-5">
+              <h2 className="h5 text-muted text-uppercase mb-3">Cadastros</h2>
+              <div className="row g-3">
+                {cadastros.map((item) => (
+                  <SectionCard
+                    key={item.to}
+                    to={item.to}
+                    title={item.label}
+                    desc={item.desc}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
 
-      <section>
-        <h2 className="h5 text-muted text-uppercase mb-3">APAC</h2>
-        <div className="row g-3">
-          {apac.map((item) => (
-            <SectionCard key={item.to} {...item} />
-          ))}
-        </div>
-      </section>
+          {apac.length > 0 && (
+            <section>
+              <h2 className="h5 text-muted text-uppercase mb-3">APAC</h2>
+              <div className="row g-3">
+                {apac.map((item) => (
+                  <SectionCard
+                    key={item.to}
+                    to={item.to}
+                    title={item.label}
+                    desc={item.desc}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+        </>
+      )}
     </div>
   );
 }

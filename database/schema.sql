@@ -117,7 +117,7 @@ CREATE TABLE solicitacoes_adocao (
   tem_criancas      VARCHAR(10)     NULL,
   tipo_residencia   VARCHAR(80)     NOT NULL,
   aceita_termo      TINYINT(1)      NOT NULL DEFAULT 0,
-  status            ENUM('Pendente', 'Em análise', 'Aprovada', 'Recusada', 'Concluída') NOT NULL DEFAULT 'Pendente',
+  status            VARCHAR(30)     NOT NULL DEFAULT 'Pendente',
   data_solicitacao  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   created_at        TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at        TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

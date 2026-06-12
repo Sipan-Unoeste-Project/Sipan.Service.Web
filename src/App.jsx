@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { PessoasProvider } from './context/PessoasContext';
+import { NavSearchProvider } from './context/NavSearchContext';
 import AppNavbar from './components/AppNavbar';
 import Navbar from './components/Navbar';
 import Menu from './components/Menu';
@@ -95,7 +96,9 @@ export default function App() {
   return (
     <PessoasProvider>
       <BrowserRouter>
-        <AppContent />
+        <NavSearchProvider>
+          <AppContent />
+        </NavSearchProvider>
       </BrowserRouter>
     </PessoasProvider>
   );

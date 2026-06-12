@@ -1,55 +1,44 @@
 import { NavLink } from 'react-router-dom';
+import { useNavSearch } from '../context/NavSearchContext';
+import { menuOptionsFromFilter } from '../data/navOptions';
 
-const menuSections = [
-  {
-    title: 'Público',
-    items: [
-      { to: '/quem-somos', label: 'Quem somos' },
-      { to: '/publico/animais', label: 'Animais' },
-      { to: '/publico/doacoes', label: 'Doações' },
-      { to: '/publico/campanhas', label: 'Campanhas' },
-      { to: '/publico/contato', label: 'Contato' },
-    ],
-  },
-  {
-    title: 'Administrativo',
-    items: [
-      { to: '/apac', label: 'Painel APAC' },
-      { to: '/apac/estoque', label: 'Estoque' },
-      { to: '/apac/financeiro', label: 'Financeiro' },
-      { to: '/apac/despesas', label: 'Despesas' },
-      { to: '/apac/saude', label: 'Saúde animal' },
-      { to: '/apac/balancete', label: 'Balancete' },
-      { to: '/adocoes', label: 'Adoções' },
-      { to: '/usuarios', label: 'Usuários' },
-      { to: '/funcionarios', label: 'Voluntários' },
-    ],
-  },
+const MENU_SECTIONS = [
+  { title: 'Público', menu: 'public' },
+  { title: 'Administrativo', menu: 'admin' },
 ];
 
 export default function Menu() {
+  const { opcoesFiltradas, buscaAtiva } = useNavSearch();
+
   return (
     <aside className="menu-panel">
       <nav className="menu-nav">
-        {menuSections.map((section) => (
-          <div key={section.title} className="menu-section">
-            <div className="menu-section-title">
-              {section.title}
-            </div>
+        {MENU_SECTIONS.map((section) => {
+          const items = menuOptionsFromFilter(opcoesFiltradas, section.menu);
+          if (buscaAtiva && items.length === 0) return null;
 
-            {section.items.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `menu-link ${isActive ? 'active' : ''}`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </div>
-        ))}
+          return (
+            <div key={section.title} className="menu-section">
+              <div className="menu-section-title">{section.title}</div>
+
+              {items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    `menu-link ${isActive ? 'active' : ''}`
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
+          );
+        })}
+
+        {buscaAtiva && opcoesFiltradas.length === 0 && (
+          <p className="text-muted small px-2 mb-0">Nenhuma opção no menu.</p>
+        )}
       </nav>
     </aside>
   );

@@ -142,7 +142,7 @@ export default function SolicitacaoAdocaoForm({
             type="text"
             className="form-control"
             placeholder="Rua, número, bairro, cidade"
-            value={form.endereco}
+            value={form.endereco ?? ''}
             onChange={handleChange}
           />
         </div>
@@ -204,7 +204,7 @@ export default function SolicitacaoAdocaoForm({
           <FormSelect
             id="temOutrosAnimais"
             name="temOutrosAnimais"
-            value={form.temOutrosAnimais}
+            value={form.temOutrosAnimais ?? ''}
             onChange={handleChange}
           >
             <option value="">Selecione</option>
@@ -220,7 +220,7 @@ export default function SolicitacaoAdocaoForm({
           <FormSelect
             id="temCriancas"
             name="temCriancas"
-            value={form.temCriancas}
+            value={form.temCriancas ?? ''}
             onChange={handleChange}
           >
             <option value="">Selecione</option>

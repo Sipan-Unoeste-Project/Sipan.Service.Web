@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import FormSelect from '../../../components/FormSelect';
 import ConfirmModal from '../../../components/ConfirmModal';
 
 const STATUS_FILTRO = ['todos', 'Pendente', 'Em análise', 'Aprovada', 'Recusada', 'Concluída'];
@@ -17,18 +16,8 @@ function formatData(iso) {
   return new Date(iso).toLocaleDateString('pt-BR');
 }
 
-function badgeStatus(status) {
-  const map = {
-    Pendente: 'bg-warning text-dark',
-    'Em análise': 'bg-success-subtle text-success',
-    Aprovada: 'bg-success',
-    Recusada: 'bg-danger',
-    Concluída: 'bg-secondary',
-  };
-  return map[status] || 'bg-secondary';
-}
 
-export default function AdocaoTable({ solicitacoes, onDelete, onStatusChange, salvandoStatusId }) {
+export default function AdocaoTable({ solicitacoes, onDelete }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('todos');
@@ -85,8 +74,7 @@ export default function AdocaoTable({ solicitacoes, onDelete, onStatusChange, sa
           <small>Tente ajustar a busca ou o filtro.</small>
         </div>
       ) : (
-        <div className="table-responsive">
-          <table className="table table-hover align-middle mb-0">
+        <table className="table table-hover align-middle mb-0">
             <thead className="table-light">
               <tr>
                 <th>Adotante</th>
@@ -104,47 +92,29 @@ export default function AdocaoTable({ solicitacoes, onDelete, onStatusChange, sa
                   <td className="text-muted">{s.cpf}</td>
                   <td className="text-muted">{formatAnimal(s)}</td>
                   <td className="text-muted small">{formatData(s.dataSolicitacao)}</td>
+                  <td className="text-muted">{s.status}</td>
                   <td>
-                    <span className={`badge ${badgeStatus(s.status)}`}>{s.status}</span>
-                  </td>
-                  <td>
-                    <div className="d-flex gap-1 flex-wrap align-items-center">
-                      <FormSelect
-                        className="form-select-sm"
-                        style={{ minWidth: 130, maxWidth: 160 }}
-                        value={s.status}
-                        disabled={salvandoStatusId === s.id}
-                        onChange={(e) => onStatusChange?.(s, e.target.value)}
-                      >
-                        <option>Pendente</option>
-                        <option>Em análise</option>
-                        <option>Aprovada</option>
-                        <option>Recusada</option>
-                        <option>Concluída</option>
-                      </FormSelect>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-secondary"
-                        title="Editar"
-                        onClick={() => navigate(`/adocoes/${s.id}/editar`)}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-danger"
-                        title="Excluir"
-                        onClick={() => setConfirmId(s.id)}
-                      >
-                        Excluir
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary me-1"
+                      title="Editar"
+                      onClick={() => navigate(`/adocoes/${s.id}/editar`)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger"
+                      title="Excluir"
+                      onClick={() => setConfirmId(s.id)}
+                    >
+                      Excluir
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
       )}
 
       <ConfirmModal
