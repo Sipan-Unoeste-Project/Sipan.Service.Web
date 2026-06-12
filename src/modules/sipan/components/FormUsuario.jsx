@@ -84,8 +84,9 @@ export default function FormUsuario({
   return (
     <div className="card border-0 shadow-sm mb-4">
       <div className="card-body">
-        <h4 className="mb-4">{editandoId != null ? 'Editar Usuário' : 'Cadastrar Usuário'}</h4>
-
+        <h4 className="mb-4">
+        {editandoId != null ? 'Editar Usuário' : 'Novo Usuário'}
+        </h4>
         <div className="row">
           <div className="col-md-6 mb-3">
             <label className="form-label">Nome</label>
@@ -139,7 +140,7 @@ export default function FormUsuario({
             >
               <option value="">Selecione</option>
               <option>Administrador</option>
-              <option>Funcionário</option>
+              <option>Financeiro</option>
               <option>Veterinário</option>
               <option>Voluntário</option>
             </select>

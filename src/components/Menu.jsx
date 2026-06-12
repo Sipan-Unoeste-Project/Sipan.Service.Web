@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 
 const menuSections = [
   {
+    title: 'Público',
     items: [
       { to: '/quem-somos', label: 'Quem somos' },
       { to: '/publico/animais', label: 'Animais' },
@@ -11,6 +12,7 @@ const menuSections = [
     ],
   },
   {
+    title: 'Administrativo',
     items: [
       { to: '/apac', label: 'Painel APAC' },
       { to: '/apac/estoque', label: 'Estoque' },
@@ -18,8 +20,9 @@ const menuSections = [
       { to: '/apac/despesas', label: 'Despesas' },
       { to: '/apac/saude', label: 'Saúde animal' },
       { to: '/apac/balancete', label: 'Balancete' },
+      { to: '/adocoes', label: 'Adoções' },
       { to: '/usuarios', label: 'Usuários' },
-      { to: '/funcionarios', label: 'Funcionários' },
+      { to: '/funcionarios', label: 'Voluntários' },
     ],
   },
 ];
@@ -30,7 +33,10 @@ export default function Menu() {
       <nav className="menu-nav">
         {menuSections.map((section) => (
           <div key={section.title} className="menu-section">
-            <div className="menu-section-title">{section.title}</div>
+            <div className="menu-section-title">
+              {section.title}
+            </div>
+
             {section.items.map((item) => (
               <NavLink
                 key={item.to}
@@ -48,4 +54,3 @@ export default function Menu() {
     </aside>
   );
 }
-

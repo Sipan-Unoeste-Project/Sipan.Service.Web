@@ -11,7 +11,7 @@ import PessoasPage from './pages/PessoasPage';
 import NovaPessoaPage from './pages/NovaPessoaPage';
 import EditarPessoaPage from './pages/EditarPessoaPage';
 import Usuarios from './modules/sipan/pages/Usuarios';
-import Funcionarios from './modules/sipan/pages/Funcionarios';
+import Voluntarios from './modules/sipan/pages/Voluntarios';
 import PaginaAnimais from './modules/animais/paginas/PaginaAnimais';
 import ApacPainelPage from './modules/apac/pages/ApacPainelPage';
 import ApacDoacoesPage from './modules/apac/pages/ApacDoacoesPage';
@@ -21,6 +21,7 @@ import ApacFinanceiroPage from './modules/apac/pages/ApacFinanceiroPage';
 import ApacDespesasPage from './modules/apac/pages/ApacDespesasPage';
 import ApacSaudePage from './modules/apac/pages/ApacSaudePage';
 import ApacBalancetePage from './modules/apac/pages/ApacBalancetePage';
+import SolicitacaoAdocao from './modules/sipan/pages/SolicitacaoAdocao';
 
 function AppContent() {
   const location = useLocation();
@@ -41,9 +42,11 @@ function AppContent() {
       <Route path="/pessoas/:id/editar" element={<EditarPessoaPage />} />
 
       <Route path="/usuarios" element={<Usuarios />} />
-      <Route path="/funcionarios" element={<Funcionarios />} />
+      <Route path="/funcionarios" element={<Voluntarios />} />
 
       <Route path="/animais" element={<PaginaAnimais />} />
+
+      <Route path="/adocoes" element={<SolicitacaoAdocao />} />
 
       <Route path="/apac" element={<ApacPainelPage />} />
       <Route path="/apac/doacao" element={<ApacDoacoesPage />} />
