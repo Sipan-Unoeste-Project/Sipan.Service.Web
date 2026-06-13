@@ -4,7 +4,7 @@ const CardAnimal = ({ animal, onAbrir }) => {
     if (status?.includes("indis")) return "bg-secondary";
     if (status?.includes("dispon")) return "bg-success";
     if (status?.includes("adota")) return "bg-warning text-dark";
-    return "bg-info text-dark";
+    return "bg-success-subtle text-success";
   };
 
   return (

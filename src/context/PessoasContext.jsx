@@ -14,7 +14,9 @@ export function PessoasProvider({ children }) {
     setError('');
     try {
       const lista = await pessoasApi.listPessoas();
-      setPessoas(lista);
+      setPessoas(
+        lista.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }))
+      );
     } catch (err) {
       const msg =
         err instanceof ApiError
@@ -33,13 +35,21 @@ export function PessoasProvider({ children }) {
 
   async function addPessoa(data) {
     const nova = await pessoasApi.createPessoa(data);
-    setPessoas((prev) => [...prev, nova]);
+    setPessoas((prev) =>
+      [...prev, nova].sort((a, b) =>
+        a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' })
+      )
+    );
     return nova;
   }
 
   async function updatePessoa(data) {
     const atualizada = await pessoasApi.updatePessoa(data.id, data);
-    setPessoas((prev) => prev.map((p) => (p.id === atualizada.id ? atualizada : p)));
+    setPessoas((prev) =>
+      prev
+        .map((p) => (p.id === atualizada.id ? atualizada : p))
+        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }))
+    );
     return atualizada;
   }
 

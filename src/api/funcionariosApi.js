@@ -4,6 +4,10 @@ export function listFuncionarios({ busca, status } = {}) {
   return apiRequest(`/api/funcionarios${buildQuery({ busca, status })}`);
 }
 
+export function getFuncionario(id) {
+  return apiRequest(`/api/funcionarios/${id}`);
+}
+
 export function createFuncionario(body) {
   return apiRequest('/api/funcionarios', {
     method: 'POST',

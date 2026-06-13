@@ -1,6 +1,6 @@
 export default function ApacTabs({ tabs, active, onChange }) {
   return (
-    <ul className="nav nav-tabs mb-4">
+    <ul className="nav nav-tabs sipan-tabs mb-4">
       {tabs.map((tab) => (
         <li className="nav-item" key={tab.id}>
           <button

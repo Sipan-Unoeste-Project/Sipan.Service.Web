@@ -231,7 +231,7 @@ export default function ApacCampanhasPage() {
                       <div className="d-flex flex-wrap gap-1">
                         <button
                           type="button"
-                          className="btn btn-sm btn-outline-primary"
+                          className="btn btn-sm btn-outline-success"
                           onClick={() => abrirForm(c)}
                         >
                           Editar

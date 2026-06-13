@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { usePessoas } from '../context/PessoasContext';
 import PageShell from '../components/PageShell';
-import StatsCards from '../components/StatsCards';
 import PessoaTable from '../components/PessoaTable';
 import Toast from '../components/Toast';
 import FeedbackAlert from '../components/FeedbackAlert';
@@ -34,7 +33,7 @@ export default function PessoasPage() {
   return (
     <PageShell
       title="Pessoas"
-      subtitle="Cadastro de doadores, adotantes e voluntários"
+      subtitle="Cadastro de doadores e adotantes"
       action={
         <Link to="/pessoas/nova" className="btn btn-success">
           + Nova Pessoa
@@ -43,8 +42,6 @@ export default function PessoasPage() {
     >
       <FeedbackAlert message={error} variant="danger" />
       <FeedbackAlert message={erroAcao} variant="danger" />
-
-      <StatsCards pessoas={pessoas} />
 
       <div className="card border-0 shadow-sm">
         <div className="card-body p-3">

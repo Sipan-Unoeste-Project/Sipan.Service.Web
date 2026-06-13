@@ -1,19 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ConfirmModal from './ConfirmModal';
+import { PERFIS_LABEL } from '../utils/pessoaTipos';
 
-const TIPO_LABEL  = { doador: 'Doador',   adotante: 'Adotante',   voluntario: 'Voluntário' };
-const TIPO_PLURAL = { doador: 'Doadores', adotante: 'Adotantes', voluntario: 'Voluntários' };
+const TIPO_PLURAL = { doador: 'Doadores', adotante: 'Adotantes' };
 
-const BADGE_CLASS = {
-  doador: 'bg-primary',
-  adotante: 'text-white',
-  voluntario: 'bg-warning text-dark',
-};
-
-const BADGE_STYLE = {
-  adotante: { backgroundColor: '#6f42c1' },
-};
+function formatPerfis(tipos) {
+  if (!tipos?.length) return '—';
+  return tipos.map((t) => PERFIS_LABEL[t] || t).join(', ');
+}
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
@@ -22,7 +17,7 @@ function formatDate(dateStr) {
 }
 
 /**
- * Tabela de listagem de pessoas com busca, filtro por tipo e exclusão.
+ * Tabela de listagem de pessoas com busca, filtro por perfil e exclusão.
  *
  * @param {{ pessoas: Array, onDelete: Function }} props
  */
@@ -32,17 +27,20 @@ export default function PessoaTable({ pessoas, onDelete }) {
   const [filter, setFilter] = useState('todos');
   const [confirmId, setConfirmId] = useState(null);
 
-  const filtered = pessoas.filter((p) => {
-    const matchTipo = filter === 'todos' || p.tipo === filter;
-    const q = search.toLowerCase();
-    const matchSearch =
-      !q ||
-      p.nome.toLowerCase().includes(q) ||
-      p.cpf.includes(q) ||
-      p.telefone.includes(q) ||
-      p.email.toLowerCase().includes(q);
-    return matchTipo && matchSearch;
-  });
+  const filtered = pessoas
+    .filter((p) => {
+      const tipos = p.tipos || [];
+      const matchTipo = filter === 'todos' || tipos.includes(filter);
+      const q = search.toLowerCase();
+      const matchSearch =
+        !q ||
+        p.nome.toLowerCase().includes(q) ||
+        p.cpf.includes(q) ||
+        p.telefone.includes(q) ||
+        (p.email || '').toLowerCase().includes(q);
+      return matchTipo && matchSearch;
+    })
+    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }));
 
   const confirmTarget = confirmId ? pessoas.find((p) => p.id === confirmId) : null;
 
@@ -53,7 +51,6 @@ export default function PessoaTable({ pessoas, onDelete }) {
 
   return (
     <>
-      {/* Barra de busca e filtros */}
       <div className="d-flex flex-wrap gap-2 mb-3 align-items-center">
         <input
           type="search"
@@ -64,8 +61,8 @@ export default function PessoaTable({ pessoas, onDelete }) {
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        <div className="btn-group" role="group" aria-label="Filtrar por tipo">
-          {['todos', 'doador', 'adotante', 'voluntario'].map((t) => (
+        <div className="btn-group" role="group" aria-label="Filtrar por perfil">
+          {['todos', 'doador', 'adotante'].map((t) => (
             <button
               key={t}
               type="button"
@@ -82,7 +79,6 @@ export default function PessoaTable({ pessoas, onDelete }) {
         </span>
       </div>
 
-      {/* Tabela */}
       {filtered.length === 0 ? (
         <div className="text-center py-5 text-muted">
           <p className="mb-1 fw-semibold">Nenhuma pessoa encontrada.</p>
@@ -95,11 +91,11 @@ export default function PessoaTable({ pessoas, onDelete }) {
               <tr>
                 <th>Nome</th>
                 <th>CPF</th>
-                <th>Tipo</th>
+                <th>Perfis</th>
                 <th>Telefone</th>
                 <th>E-mail</th>
                 <th>Cadastrado em</th>
-                <th className="text-end">Ações</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -107,18 +103,11 @@ export default function PessoaTable({ pessoas, onDelete }) {
                 <tr key={p.id}>
                   <td className="fw-medium">{p.nome}</td>
                   <td className="text-muted">{p.cpf}</td>
-                  <td>
-                    <span
-                      className={`badge ${BADGE_CLASS[p.tipo]}`}
-                      style={BADGE_STYLE[p.tipo] || {}}
-                    >
-                      {TIPO_LABEL[p.tipo]}
-                    </span>
-                  </td>
+                  <td className="text-muted">{formatPerfis(p.tipos)}</td>
                   <td>{p.telefone}</td>
                   <td className="text-muted">{p.email || '—'}</td>
                   <td className="text-muted small">{formatDate(p.criadoEm)}</td>
-                  <td className="text-end">
+                  <td>
                     <button
                       className="btn btn-sm btn-outline-secondary me-1"
                       title="Editar"
@@ -141,7 +130,6 @@ export default function PessoaTable({ pessoas, onDelete }) {
         </div>
       )}
 
-      {/* Modal de confirmação de exclusão */}
       <ConfirmModal
         show={!!confirmId}
         nome={confirmTarget?.nome}

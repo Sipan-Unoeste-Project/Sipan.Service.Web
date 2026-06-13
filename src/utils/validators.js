@@ -31,8 +31,8 @@ export function validateForm(data, existingCPFs = []) {
     errors.cpf = 'CPF já cadastrado para outra pessoa.';
   }
 
-  if (!data.tipo) {
-    errors.tipo = 'Selecione um tipo.';
+  if (!Array.isArray(data.tipos) || data.tipos.length === 0) {
+    errors.tipos = 'Marque ao menos um perfil (Doador ou Adotante).';
   }
 
   if (!data.telefone.trim()) {
@@ -43,6 +43,17 @@ export function validateForm(data, existingCPFs = []) {
 
   if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
     errors.email = 'E-mail inválido.';
+  }
+
+  if (data.cep?.trim()) {
+    const cepDigits = data.cep.replace(/\D/g, '');
+    if (cepDigits.length !== 8) {
+      errors.cep = 'CEP inválido (8 dígitos).';
+    }
+  }
+
+  if (data.estado?.trim() && !/^[A-Za-z]{2}$/.test(data.estado.trim())) {
+    errors.estado = 'Informe a UF com 2 letras.';
   }
 
   return errors;

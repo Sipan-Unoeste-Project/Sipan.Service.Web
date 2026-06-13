@@ -1,31 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { ApiError } from '../../../api/client';
 import * as usuariosApi from '../../../api/usuariosApi';
 import PageShell from '../../../components/PageShell';
-import SimpleStatsRow from '../../../components/SimpleStatsRow';
-import ConfirmModal from '../../../components/ConfirmModal';
 import FeedbackAlert from '../../../components/FeedbackAlert';
 import Toast from '../../../components/Toast';
-import { useTimedMessage } from '../../../hooks/useTimedMessage';
-import FormUsuario from '../components/FormUsuario';
-import ListaUsuarios from '../components/ListaUsuarios';
+import UsuarioTable from '../components/UsuarioTable';
 
 export default function Usuarios() {
+  const location = useLocation();
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [busca, setBusca] = useState('');
-  const [editandoId, setEditandoId] = useState(null);
-  const [excluirId, setExcluirId] = useState(null);
-  const [erro, setErro] = useTimedMessage(6000);
-  const [toast, setToast] = useTimedMessage(3500);
+  const [error, setError] = useState('');
+  const [erroAcao, setErroAcao] = useState('');
+  const [toast, setToast] = useState(location.state?.toast || '');
+  const [salvandoStatusId, setSalvandoStatusId] = useState(null);
 
   const carregar = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
-      const lista = await usuariosApi.listUsuarios({ busca: busca || undefined });
-      setUsuarios(lista);
+      const lista = await usuariosApi.listUsuarios();
+      setUsuarios(
+        lista.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }))
+      );
     } catch (err) {
-      setErro(
+      setError(
         err instanceof ApiError
           ? err.message
           : 'Não foi possível carregar usuários. Verifique se a API está em execução.'
@@ -34,87 +34,78 @@ export default function Usuarios() {
     } finally {
       setLoading(false);
     }
-  }, [busca, setErro]);
+  }, []);
 
   useEffect(() => {
-    const timer = setTimeout(carregar, busca ? 300 : 0);
-    return () => clearTimeout(timer);
-  }, [carregar, busca]);
+    carregar();
+  }, [carregar]);
 
-  const excluirAlvo = excluirId ? usuarios.find((u) => u.id === excluirId) : null;
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(''), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
-  async function confirmarExclusao() {
-    if (!excluirId) return;
+  async function handleStatusChange(usuario, status) {
+    if (usuario.status === status) return;
+    setErroAcao('');
+    setSalvandoStatusId(usuario.id);
     try {
-      await usuariosApi.deleteUsuario(excluirId);
-      setExcluirId(null);
-      setToast('Usuário excluído com sucesso.');
-      await carregar();
+      const atualizado = await usuariosApi.updateUsuario(
+        usuario.id,
+        usuariosApi.toUsuarioBody({ ...usuario, status, senha: '' })
+      );
+      setUsuarios((prev) =>
+        prev
+          .map((u) => (u.id === usuario.id ? atualizado : u))
+          .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }))
+      );
     } catch (err) {
-      setErro(err instanceof ApiError ? err.message : 'Erro ao excluir usuário.');
-      setExcluirId(null);
+      setErroAcao(err instanceof ApiError ? err.message : 'Erro ao alterar status.');
+    } finally {
+      setSalvandoStatusId(null);
     }
   }
 
-  const ativos = usuarios.filter((u) => u.status === 'Ativo').length;
-  const admins = usuarios.filter((u) => u.permissao === 'Administrador').length;
+  async function handleDelete(id) {
+    setErroAcao('');
+    try {
+      await usuariosApi.deleteUsuario(id);
+      setUsuarios((prev) => prev.filter((u) => u.id !== id));
+      setToast('Usuário excluído com sucesso.');
+    } catch (err) {
+      setErroAcao(err instanceof ApiError ? err.message : 'Erro ao excluir usuário.');
+    }
+  }
 
   return (
     <PageShell
-      title="Usuários do sistema"
-      subtitle="Controle de acesso e permissões"
+      title="Usuários"
+      subtitle="Controle de acesso e permissões do sistema"
+      action={
+        <Link to="/usuarios/novo" className="btn btn-success">
+          + Novo Usuário
+        </Link>
+      }
     >
-      <SimpleStatsRow
-        items={[
-          { label: 'Total', value: loading ? '—' : usuarios.length },
-          { label: 'Ativos', value: ativos },
-          { label: 'Administradores', value: admins },
-        ]}
-      />
+      <FeedbackAlert message={error} variant="danger" />
+      <FeedbackAlert message={erroAcao} variant="danger" />
 
-      <FeedbackAlert message={erro} variant="danger" />
-
-      <div className="mb-4">
-        <input
-          type="search"
-          className="form-control"
-          style={{ maxWidth: 320 }}
-          placeholder="Buscar por nome ou permissão..."
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-        />
+      <div className="card border-0 shadow-sm">
+        <div className="card-body p-3">
+          {loading ? (
+            <p className="text-muted mb-0 py-3 text-center">Carregando usuários...</p>
+          ) : (
+            <UsuarioTable
+              usuarios={usuarios}
+              onDelete={handleDelete}
+              onStatusChange={handleStatusChange}
+              salvandoStatusId={salvandoStatusId}
+            />
+          )}
+        </div>
       </div>
-
-      <FormUsuario
-        usuarios={usuarios}
-        setUsuarios={setUsuarios}
-        editandoId={editandoId}
-        setEditandoId={setEditandoId}
-        onSuccess={(msg) => {
-          setToast(msg);
-          carregar();
-        }}
-        onError={setErro}
-      />
-
-      <div className="mt-4">
-        {loading ? (
-          <p className="text-muted">Carregando...</p>
-        ) : (
-          <ListaUsuarios
-            usuarios={usuarios}
-            onExcluir={setExcluirId}
-            onEditar={setEditandoId}
-          />
-        )}
-      </div>
-
-      <ConfirmModal
-        show={!!excluirId}
-        nome={excluirAlvo?.nome}
-        onConfirm={confirmarExclusao}
-        onCancel={() => setExcluirId(null)}
-      />
 
       <Toast message={toast} type="success" />
     </PageShell>

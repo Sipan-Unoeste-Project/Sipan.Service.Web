@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { ApiError } from '../../../api/client';
 import * as financeiroApi from '../../../api/financeiroApi';
 import { getDataAtualIso } from '../../../utils/dates';
+import FormSelect from '../../../components/FormSelect';
 import PageShell from '../../../components/PageShell';
 import ApacTabs from '../components/ApacTabs';
 import StatRow from '../components/StatRow';
@@ -105,7 +106,7 @@ export default function ApacFinanceiroPage() {
           {
             label: 'Saldo',
             value: formatBRL(saldo),
-            valueClass: saldo >= 0 ? 'text-primary' : 'text-danger',
+            valueClass: saldo >= 0 ? 'text-success' : 'text-danger',
             sub: saldo >= 0 ? 'Positivo' : 'Negativo',
           },
         ]}
@@ -128,8 +129,7 @@ export default function ApacFinanceiroPage() {
               <div className="row g-3">
                 <div className="col-md-4">
                   <label className="form-label">Origem</label>
-                  <select
-                    className="form-select"
+                  <FormSelect
                     value={formE.origem}
                     onChange={(e) => setFormE({ ...formE, origem: e.target.value })}
                   >
@@ -137,7 +137,7 @@ export default function ApacFinanceiroPage() {
                     <option>Evento / Campanha</option>
                     <option>Patrocínio</option>
                     <option>Outro</option>
-                  </select>
+                  </FormSelect>
                 </div>
                 <div className="col-md-4">
                   <label className="form-label">Valor (R$)</label>
@@ -197,8 +197,7 @@ export default function ApacFinanceiroPage() {
               <div className="row g-3">
                 <div className="col-md-4">
                   <label className="form-label">Tipo de despesa</label>
-                  <select
-                    className="form-select"
+                  <FormSelect
                     value={formS.tipo}
                     onChange={(e) => setFormS({ ...formS, tipo: e.target.value })}
                   >
@@ -208,7 +207,7 @@ export default function ApacFinanceiroPage() {
                     <option>Material de limpeza</option>
                     <option>Transporte</option>
                     <option>Outro</option>
-                  </select>
+                  </FormSelect>
                 </div>
                 <div className="col-md-4">
                   <label className="form-label">Valor (R$)</label>

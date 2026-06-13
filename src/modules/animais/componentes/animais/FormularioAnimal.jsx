@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import FormSelect from "../../../../components/FormSelect";
 import { adicionarAnimal, atualizarAnimal } from "../../utils/storageAnimais";
-import { modeloAnimal, portes } from "../../utils/modeloAnimal";
+import { modeloAnimal, portes, statusOptions } from "../../utils/modeloAnimal";
 import { ESPECIES } from "../../utils/especies";
 import { listarRacas, adicionarRaca } from "../../utils/racasStorage";
 
@@ -167,7 +168,7 @@ const FormularioAnimal = ({
 
                         <div className="col-12 col-md-6">
                             <label className="form-label">Espécie <span style={{ color: 'var(--bs-danger)' }}>*</span></label>
-                            <select
+                            <FormSelect
                                 name="especie"
                                 value={form.especie}
                                 onChange={(e) => {
@@ -181,13 +182,12 @@ const FormularioAnimal = ({
                                         setForm((prev) => ({ ...prev, raca: "" }));
                                     }, 0);
                                 }}
-                                className="form-select"
                             >
                                 <option value="">Selecione espécie</option>
                                 {ESPECIES.map((s) => (
                                     <option key={s} value={s}>{s}</option>
                                 ))}
-                            </select>
+                            </FormSelect>
                             {erros.especie && <div className="text-danger small mt-1">{erros.especie}</div>}
                         </div>
 
@@ -236,7 +236,7 @@ const FormularioAnimal = ({
                                 <button
                                     type="button"
                                     title="Cadastrar raça"
-                                    style={{ position: 'absolute', right: 0, top: 0, borderColor: 'var(--primary)', fontSize: '1.5rem', borderRadius: 'var(--radius)', padding: '0 0.25rem' }}
+                                    style={{ position: 'absolute', right: 0, top: 0, borderColor: 'var(--color-accent)', fontSize: '1.5rem', borderRadius: 'var(--radius)', padding: '0 0.25rem' }}
                                     onClick={() => {
                                         if (!form.especie) {
                                             onFeedback?.('Selecione a espécie antes de cadastrar uma raça', 'error');
@@ -298,16 +298,15 @@ const FormularioAnimal = ({
 
                         <div className="col-12 col-md-6">
                             <label className="form-label">Sexo</label>
-                            <select
+                            <FormSelect
                                 name="sexo"
                                 value={form.sexo}
                                 onChange={handleChange}
-                                className="form-select"
                             >
                                 <option value="Macho">Macho</option>
                                 <option value="Fêmea">Fêmea</option>
                                 <option value="Desconhecido">Desconhecido</option>
-                            </select>
+                            </FormSelect>
                         </div>
 
                         <div className="col-12 col-md-6">
@@ -338,16 +337,31 @@ const FormularioAnimal = ({
 
                         <div className="col-12 col-md-6">
                             <label className="form-label">Porte</label>
-                            <select
+                            <FormSelect
                                 name="porte"
                                 value={form.porte}
                                 onChange={handleChange}
-                                className="form-select"
                             >
                                 {portes.map((p) => (
                                     <option key={p} value={p}>{p}</option>
                                 ))}
-                            </select>
+                            </FormSelect>
+                        </div>
+
+                        <div className="col-12 col-md-6">
+                            <label className="form-label">Status</label>
+                            <FormSelect
+                                name="status"
+                                value={form.status}
+                                onChange={handleChange}
+                            >
+                                {statusOptions.map((s) => (
+                                    <option key={s} value={s}>{s}</option>
+                                ))}
+                            </FormSelect>
+                            <div className="form-text">
+                                Só animais com status &quot;Disponível&quot; aparecem nas solicitações de adoção.
+                            </div>
                         </div>
 
                         <div className="col-12">

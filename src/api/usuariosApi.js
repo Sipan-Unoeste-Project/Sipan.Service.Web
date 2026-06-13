@@ -4,6 +4,10 @@ export function listUsuarios({ busca, status } = {}) {
   return apiRequest(`/api/usuarios${buildQuery({ busca, status })}`);
 }
 
+export function getUsuario(id) {
+  return apiRequest(`/api/usuarios/${id}`);
+}
+
 export function createUsuario(body) {
   return apiRequest('/api/usuarios', {
     method: 'POST',

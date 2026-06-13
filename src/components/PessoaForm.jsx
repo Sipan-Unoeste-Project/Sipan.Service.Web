@@ -1,15 +1,36 @@
 import { useState } from 'react';
-import { maskCPF, maskPhone } from '../utils/masks';
+import FormSelect from './FormSelect';
+import { maskCPF, maskPhone, maskCEP } from '../utils/masks';
 import { validateForm } from '../utils/validators';
+import { PERFIS_PESSOA, normalizeTipos } from '../utils/pessoaTipos';
+
+const UFS = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
+  'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+];
 
 const EMPTY_FORM = {
   nome: '',
   cpf: '',
-  tipo: '',
+  tipos: [],
   telefone: '',
   email: '',
+  cep: '',
+  endereco: '',
+  numero: '',
+  bairro: '',
+  cidade: '',
+  estado: '',
   obs: '',
 };
+
+function buildFormState(initialData) {
+  return {
+    ...EMPTY_FORM,
+    ...initialData,
+    tipos: normalizeTipos(initialData),
+  };
+}
 
 /**
  * Formulário reutilizável para cadastro e edição de pessoas.
@@ -27,8 +48,19 @@ export default function PessoaForm({
   onCancel,
   submitLabel = 'Salvar',
 }) {
-  const [form, setForm] = useState({ ...EMPTY_FORM, ...initialData });
+  const [form, setForm] = useState(() => buildFormState(initialData));
   const [errors, setErrors] = useState({});
+
+  function toggleTipo(tipo) {
+    setForm((prev) => {
+      const has = prev.tipos.includes(tipo);
+      const tipos = has ? prev.tipos.filter((t) => t !== tipo) : [...prev.tipos, tipo];
+      return { ...prev, tipos };
+    });
+    if (errors.tipos) {
+      setErrors((prev) => ({ ...prev, tipos: '' }));
+    }
+  }
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -36,6 +68,7 @@ export default function PessoaForm({
     let masked = value;
     if (name === 'cpf') masked = maskCPF(value);
     if (name === 'telefone') masked = maskPhone(value);
+    if (name === 'cep') masked = maskCEP(value);
 
     setForm((prev) => ({ ...prev, [name]: masked }));
 
@@ -95,28 +128,34 @@ export default function PessoaForm({
         </div>
       </div>
 
-      {/* Tipo e Telefone */}
+      {/* Perfis e contato */}
       <div className="row g-3 mb-3">
-        <div className="col-md-4">
-          <label htmlFor="tipo" className="form-label fw-semibold">
-            Tipo <span className="text-danger">*</span>
-          </label>
-          <select
-            id="tipo"
-            name="tipo"
-            className={`form-select ${errors.tipo ? 'is-invalid' : ''}`}
-            value={form.tipo}
-            onChange={handleChange}
-          >
-            <option value="">Selecione…</option>
-            <option value="doador">Doador</option>
-            <option value="adotante">Adotante</option>
-            <option value="voluntario">Voluntário</option>
-          </select>
-          {errors.tipo && <div className="invalid-feedback">{errors.tipo}</div>}
+        <div className="col-12">
+          <span className="form-label fw-semibold d-block">
+            Perfis <span className="text-danger">*</span>
+          </span>
+          <div className="d-flex flex-wrap gap-3">
+            {PERFIS_PESSOA.map(({ value, label }) => (
+              <div className="form-check" key={value}>
+                <input
+                  type="checkbox"
+                  className={`form-check-input ${errors.tipos ? 'is-invalid' : ''}`}
+                  id={`perfil-${value}`}
+                  checked={form.tipos.includes(value)}
+                  onChange={() => toggleTipo(value)}
+                />
+                <label className="form-check-label" htmlFor={`perfil-${value}`}>
+                  {label}
+                </label>
+              </div>
+            ))}
+          </div>
+          {errors.tipos && <div className="text-danger small mt-1">{errors.tipos}</div>}
         </div>
+      </div>
 
-        <div className="col-md-4">
+      <div className="row g-3 mb-3">
+        <div className="col-md-6">
           <label htmlFor="telefone" className="form-label fw-semibold">
             Telefone <span className="text-danger">*</span>
           </label>
@@ -134,7 +173,7 @@ export default function PessoaForm({
           {errors.telefone && <div className="invalid-feedback">{errors.telefone}</div>}
         </div>
 
-        <div className="col-md-4">
+        <div className="col-md-6">
           <label htmlFor="email" className="form-label fw-semibold">
             E-mail
           </label>
@@ -149,6 +188,111 @@ export default function PessoaForm({
             autoComplete="off"
           />
           {errors.email && <div className="invalid-feedback">{errors.email}</div>}
+        </div>
+      </div>
+
+      {/* Endereço */}
+      <h6 className="fw-semibold mb-3">Endereço</h6>
+      <div className="row g-3 mb-3">
+        <div className="col-md-3">
+          <label htmlFor="cep" className="form-label fw-semibold">
+            CEP
+          </label>
+          <input
+            type="text"
+            id="cep"
+            name="cep"
+            className={`form-control ${errors.cep ? 'is-invalid' : ''}`}
+            placeholder="00000-000"
+            value={form.cep}
+            onChange={handleChange}
+            maxLength={9}
+            autoComplete="postal-code"
+          />
+          {errors.cep && <div className="invalid-feedback">{errors.cep}</div>}
+        </div>
+
+        <div className="col-md-6">
+          <label htmlFor="endereco" className="form-label fw-semibold">
+            Endereço
+          </label>
+          <input
+            type="text"
+            id="endereco"
+            name="endereco"
+            className="form-control"
+            placeholder="Rua, avenida, logradouro"
+            value={form.endereco}
+            onChange={handleChange}
+            autoComplete="street-address"
+          />
+        </div>
+
+        <div className="col-md-3">
+          <label htmlFor="numero" className="form-label fw-semibold">
+            Número
+          </label>
+          <input
+            type="text"
+            id="numero"
+            name="numero"
+            className="form-control"
+            placeholder="Nº"
+            value={form.numero}
+            onChange={handleChange}
+          />
+        </div>
+      </div>
+
+      <div className="row g-3 mb-3">
+        <div className="col-md-4">
+          <label htmlFor="bairro" className="form-label fw-semibold">
+            Bairro
+          </label>
+          <input
+            type="text"
+            id="bairro"
+            name="bairro"
+            className="form-control"
+            value={form.bairro}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="col-md-5">
+          <label htmlFor="cidade" className="form-label fw-semibold">
+            Cidade
+          </label>
+          <input
+            type="text"
+            id="cidade"
+            name="cidade"
+            className="form-control"
+            value={form.cidade}
+            onChange={handleChange}
+            autoComplete="address-level2"
+          />
+        </div>
+
+        <div className="col-md-3">
+          <label htmlFor="estado" className="form-label fw-semibold">
+            Estado
+          </label>
+          <FormSelect
+            id="estado"
+            name="estado"
+            className={errors.estado ? 'is-invalid' : ''}
+            value={form.estado}
+            onChange={handleChange}
+          >
+            <option value="">UF</option>
+            {UFS.map((uf) => (
+              <option key={uf} value={uf}>
+                {uf}
+              </option>
+            ))}
+          </FormSelect>
+          {errors.estado && <div className="invalid-feedback">{errors.estado}</div>}
         </div>
       </div>
 
