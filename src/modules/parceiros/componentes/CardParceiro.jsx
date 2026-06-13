@@ -60,20 +60,20 @@ const CardParceiro = ({ parceiro, onEditar, onExcluir }) => {
           </p>
         )}
 
-        <div className="d-flex gap-2 mt-auto pt-2">
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-primary"
-            onClick={() => onEditar(parceiro)}
-          >
-            Editar
-          </button>
+        <div className="d-flex gap-2 mt-auto pt-2 justify-content-between">
           <button
             type="button"
             className="btn btn-sm btn-outline-danger"
             onClick={() => onExcluir(parceiro)}
           >
             Excluir
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-primary"
+            onClick={() => onEditar(parceiro)}
+          >
+            Editar
           </button>
         </div>
 

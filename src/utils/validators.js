@@ -1,18 +1,14 @@
-/**
- * Valida CPF: aceita qualquer valor com 11 dígitos.
- */
 export function validateCPF(cpf) {
   const digits = cpf.replace(/\D/g, '');
   if (digits.length !== 11) return false;
-  if (/^(\d)\1{10}$/.test(digits)) return false; // todos iguais
+  if (/^(\d)\1{10}$/.test(digits)) return false;
   return true;
 }
 
 /**
- * Valida todos os campos do formulário.
- * @param {object} data - dados do formulário
- * @param {string[]} existingCPFs - CPFs já cadastrados (somente dígitos), exceto o da própria pessoa em edição
- * @returns {object} - objeto com mensagens de erro por campo
+ * @param {object} data 
+ * @param {string[]} existingCPFs
+ * @returns {object} 
  */
 export function validateForm(data, existingCPFs = []) {
   const errors = {};

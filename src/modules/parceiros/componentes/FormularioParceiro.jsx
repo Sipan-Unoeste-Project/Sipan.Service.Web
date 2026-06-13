@@ -9,6 +9,8 @@ import {
   formatarCpfCnpj,
   validarCpfCnpj,
   tipoCpfCnpj,
+  formatarTelefone,
+  validarTelefone,
 } from '../utils/validacaoCpfCnpj';
 import { listarParceiros } from '../utils/storageParceiros';
 
@@ -45,6 +47,9 @@ const FormularioParceiro = ({
     if (name === 'cpfCnpj') {
       const formatado = formatarCpfCnpj(value);
       setForm((prev) => ({ ...prev, cpfCnpj: formatado }));
+    } else if (name === 'telefone') {
+      const formatado = formatarTelefone(value);
+      setForm((prev) => ({ ...prev, telefone: formatado }));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
     }
@@ -77,7 +82,12 @@ const FormularioParceiro = ({
     }
 
     if (!form.tipo?.trim()) novosErros.tipo = 'Campo obrigatório';
-    if (!form.telefone?.trim()) novosErros.telefone = 'Campo obrigatório';
+
+    if (!form.telefone?.trim()) {
+      novosErros.telefone = 'Campo obrigatório';
+    } else if (!validarTelefone(form.telefone)) {
+      novosErros.telefone = 'Telefone deve ter 10 dígitos (fixo) ou 11 dígitos (celular)';
+    }
     if (!form.email?.trim()) {
       novosErros.email = 'Campo obrigatório';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
@@ -92,6 +102,7 @@ const FormularioParceiro = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validarFormulario()) return;
+
     const payload = {
       ...form,
       id: parceiroParaEditar?.id,
@@ -133,7 +144,7 @@ const FormularioParceiro = ({
             value={form.nome}
             onChange={handleChange}
             className={`form-control ${erros.nome ? 'is-invalid' : ''}`}
-            placeholder="Ex: Clínica PetShop"
+            placeholder="Ex: Clínica Pet Shop"
           />
           {erros.nome && <div className="text-danger small mt-1">{erros.nome}</div>}
         </div>
@@ -326,6 +337,7 @@ const FormularioParceiro = ({
             onChange={handleChange}
             className={`form-control ${erros.telefone ? 'is-invalid' : ''}`}
             placeholder="(13) 99999-9999"
+            maxLength={15}
           />
           {erros.telefone && (
             <div className="text-danger small mt-1">{erros.telefone}</div>

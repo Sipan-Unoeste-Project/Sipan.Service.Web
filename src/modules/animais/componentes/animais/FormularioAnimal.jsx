@@ -74,7 +74,6 @@ const FormularioAnimal = ({
         const hoje = new Date();
         hoje.setHours(0, 0, 0, 0);
 
-        // Validação de campos obrigatórios
         if (!form.nome || !form.nome.trim()) {
             novosErros.nome = "Campo obrigatório";
         }
@@ -87,7 +86,6 @@ const FormularioAnimal = ({
             novosErros.dataAcolhimento = "Campo obrigatório";
         }
 
-        // Validação de datas
         if (form.dataNascimento) {
             const nascimento = new Date(form.dataNascimento);
             if (nascimento > hoje) {
@@ -175,10 +173,8 @@ const FormularioAnimal = ({
                                     handleChange(e);
                                     const nova = e.target.value;
                                     setTimeout(() => {
-                                        // carregar raças da espécie selecionada
                                         const list = listarRacas(nova);
                                         setRacas(list);
-                                        // resetar raça quando muda espécie
                                         setForm((prev) => ({ ...prev, raca: "" }));
                                     }, 0);
                                 }}

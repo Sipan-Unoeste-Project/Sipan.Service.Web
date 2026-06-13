@@ -24,7 +24,6 @@ export function adicionarRaca(especie, raca) {
   if (exists) return list;
 
   list.push(nome);
-  // persist sorted
   const sorted = list.sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
   all[especie] = sorted;
   saveJson(KEY, all);

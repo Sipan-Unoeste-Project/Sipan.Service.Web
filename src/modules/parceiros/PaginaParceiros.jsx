@@ -56,19 +56,24 @@ export default function PaginaParceiros() {
     }
   }
 
-  const parceirosFiltrados = parceiros.filter((p) => {
-    const termoBusca = busca.toLowerCase();
-    const matchBusca =
-      !busca ||
-      p.nome?.toLowerCase().includes(termoBusca) ||
-      p.cpfCnpj?.replace(/\D/g, '').includes(busca.replace(/\D/g, '')) ||
-      p.tipo?.toLowerCase().includes(termoBusca);
+const parceirosFiltrados = parceiros.filter((p) => {
 
-    const matchStatus =
-      filtroStatus === 'todos' || p.status === filtroStatus;
+  const termo = busca.toLowerCase().trim();
 
-    return matchBusca && matchStatus;
+  const matchBusca =
+    p.nome?.toLowerCase().includes(termo) ||
+    p.cpfCnpj?.toLowerCase().includes(termo) ||
+    p.tipo?.toLowerCase().includes(termo) ||
+    p.email?.toLowerCase().includes(termo);
+
+  console.log({
+    nome: p.nome,
+    termo,
+    matchBusca,
   });
+
+  return matchBusca;
+});
 
   return (
     <PageShell
