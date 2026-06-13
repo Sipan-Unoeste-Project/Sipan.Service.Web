@@ -5,13 +5,13 @@ import StatusToggle from '../../../components/StatusToggle';
 
 const AREAS = ['Administrador', 'Financeiro', 'Voluntário', 'Veterinário', 'Recepcionista', 'Auxiliar'];
 
-export default function VoluntarioTable({ funcionarios, onDelete, onStatusChange, salvandoStatusId }) {
+export default function VoluntarioTable({ voluntarios, onDelete, onStatusChange, salvandoStatusId }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('todos');
   const [confirmId, setConfirmId] = useState(null);
 
-  const filtered = funcionarios
+  const filtered = voluntarios
     .filter((f) => {
       let matchFilter = true;
       if (filter === 'Ativo' || filter === 'Inativo') {
@@ -30,7 +30,7 @@ export default function VoluntarioTable({ funcionarios, onDelete, onStatusChange
     })
     .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }));
 
-  const confirmTarget = confirmId ? funcionarios.find((f) => f.id === confirmId) : null;
+  const confirmTarget = confirmId ? voluntarios.find((v) => v.id === confirmId) : null;
 
   return (
     <>
@@ -109,7 +109,7 @@ export default function VoluntarioTable({ funcionarios, onDelete, onStatusChange
                     <button
                       className="btn btn-sm btn-outline-secondary me-1"
                       title="Editar"
-                      onClick={() => navigate(`/funcionarios/${f.id}/editar`)}
+                      onClick={() => navigate(`/voluntarios/${f.id}/editar`)}
                     >
                       Editar
                     </button>

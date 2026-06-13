@@ -39,7 +39,7 @@ VITE_API_URL=http://localhost:5089
 |------|-----------|
 | Pessoas | `/api/pessoas` |
 | Animais | `/api/animais` |
-| Funcionários | `/api/funcionarios` |
+| Voluntários | `/api/voluntarios` |
 | Usuários | `/api/usuarios` |
 | APAC estoque | `/api/estoque` |
 | APAC campanhas | `/api/campanhas` |

@@ -53,9 +53,9 @@ function AppContent() {
       <Route path="/usuarios/novo" element={<NovoUsuarioPage />} />
       <Route path="/usuarios/:id/editar" element={<EditarUsuarioPage />} />
 
-      <Route path="/funcionarios" element={<Voluntarios />} />
-      <Route path="/funcionarios/novo" element={<NovoVoluntarioPage />} />
-      <Route path="/funcionarios/:id/editar" element={<EditarVoluntarioPage />} />
+      <Route path="/voluntarios" element={<Voluntarios />} />
+      <Route path="/voluntarios/novo" element={<NovoVoluntarioPage />} />
+      <Route path="/voluntarios/:id/editar" element={<EditarVoluntarioPage />} />
 
       <Route path="/animais" element={<PaginaAnimais />} />
 

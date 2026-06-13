@@ -4,7 +4,7 @@ export const NAV_OPTIONS = [
   { to: '/animais', label: 'Animais', desc: 'Cadastro e acompanhamento dos animais', group: 'Cadastros' },
   { to: '/adocoes', label: 'Adoções', desc: 'Solicitações de adoção', group: 'Cadastros', menu: 'admin' },
   { to: '/usuarios', label: 'Usuários', desc: 'Acesso ao sistema e permissões', group: 'Cadastros', menu: 'admin' },
-  { to: '/funcionarios', label: 'Voluntários', desc: 'Equipe e voluntários do abrigo', group: 'Cadastros', menu: 'admin' },
+  { to: '/voluntarios', label: 'Voluntários', desc: 'Equipe e voluntários do abrigo', group: 'Cadastros', menu: 'admin' },
   { to: '/apac', label: 'Painel APAC', desc: 'Visão geral do módulo', group: 'APAC', menu: 'admin' },
   { to: '/apac/doacao', label: 'Doações', desc: 'Dinheiro, PIX e produtos', group: 'APAC', menu: 'admin' },
   { to: '/apac/campanhas', label: 'Campanhas', desc: 'Eventos e metas', group: 'APAC', menu: 'admin' },

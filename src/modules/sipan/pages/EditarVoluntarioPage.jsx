@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../api/client';
-import * as funcionariosApi from '../../../api/funcionariosApi';
+import * as voluntariosApi from '../../../api/voluntariosApi';
 import PageShell from '../../../components/PageShell';
 import VoluntarioForm from '../components/VoluntarioForm';
 
@@ -18,15 +18,15 @@ export default function EditarVoluntarioPage() {
     (async () => {
       try {
         const [data, lista] = await Promise.all([
-          funcionariosApi.getFuncionario(id),
-          funcionariosApi.listFuncionarios(),
+          voluntariosApi.getVoluntario(id),
+          voluntariosApi.listVoluntarios(),
         ]);
         if (!cancelled) {
           setVoluntario(data);
           setExistingCPFs(
             lista
-              .filter((f) => String(f.id) !== String(id))
-              .map((f) => f.cpf.replace(/\D/g, ''))
+              .filter((v) => String(v.id) !== String(id))
+              .map((v) => v.cpf.replace(/\D/g, ''))
           );
         }
       } catch {
@@ -53,7 +53,7 @@ export default function EditarVoluntarioPage() {
       <PageShell title="Voluntário não encontrado">
         <div className="text-center py-4">
           <p className="text-muted mb-3">O registro solicitado não existe ou foi removido.</p>
-          <Link to="/funcionarios" className="btn btn-outline-secondary">
+          <Link to="/voluntarios" className="btn btn-outline-secondary">
             Voltar à lista
           </Link>
         </div>
@@ -64,8 +64,8 @@ export default function EditarVoluntarioPage() {
   async function handleSubmit(form) {
     setErro('');
     try {
-      await funcionariosApi.updateFuncionario(voluntario.id, form);
-      navigate('/funcionarios', { state: { toast: 'Voluntário atualizado com sucesso!' } });
+      await voluntariosApi.updateVoluntario(voluntario.id, form);
+      navigate('/voluntarios', { state: { toast: 'Voluntário atualizado com sucesso!' } });
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : 'Erro ao atualizar voluntário.');
     }
@@ -76,7 +76,7 @@ export default function EditarVoluntarioPage() {
       title="Editar Voluntário"
       subtitle={`Atualize os dados de ${voluntario.nome}.`}
       action={
-        <Link to="/funcionarios" className="btn btn-outline-secondary">
+        <Link to="/voluntarios" className="btn btn-outline-secondary">
           Voltar à lista
         </Link>
       }
@@ -88,7 +88,7 @@ export default function EditarVoluntarioPage() {
             initialData={voluntario}
             existingCPFs={existingCPFs}
             onSubmit={handleSubmit}
-            onCancel={() => navigate('/funcionarios')}
+            onCancel={() => navigate('/voluntarios')}
             submitLabel="Salvar Alterações"
           />
         </div>

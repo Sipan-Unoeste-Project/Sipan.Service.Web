@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ApiError } from '../../../api/client';
-import * as funcionariosApi from '../../../api/funcionariosApi';
+import * as voluntariosApi from '../../../api/voluntariosApi';
 import PageShell from '../../../components/PageShell';
 import FeedbackAlert from '../../../components/FeedbackAlert';
 import Toast from '../../../components/Toast';
@@ -9,7 +9,7 @@ import VoluntarioTable from '../components/VoluntarioTable';
 
 export default function Voluntarios() {
   const location = useLocation();
-  const [funcionarios, setFuncionarios] = useState([]);
+  const [voluntarios, setVoluntarios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [erroAcao, setErroAcao] = useState('');
@@ -20,8 +20,8 @@ export default function Voluntarios() {
     setLoading(true);
     setError('');
     try {
-      const lista = await funcionariosApi.listFuncionarios();
-      setFuncionarios(
+      const lista = await voluntariosApi.listVoluntarios();
+      setVoluntarios(
         lista.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }))
       );
     } catch (err) {
@@ -30,7 +30,7 @@ export default function Voluntarios() {
           ? err.message
           : 'Não foi possível carregar voluntários. Verifique se a API está em execução.'
       );
-      setFuncionarios([]);
+      setVoluntarios([]);
     } finally {
       setLoading(false);
     }
@@ -47,21 +47,21 @@ export default function Voluntarios() {
     }
   }, [toast]);
 
-  async function handleStatusChange(funcionario, status) {
-    if (funcionario.status === status) return;
+  async function handleStatusChange(voluntario, status) {
+    if (voluntario.status === status) return;
     setErroAcao('');
-    setSalvandoStatusId(funcionario.id);
+    setSalvandoStatusId(voluntario.id);
     try {
-      const atualizado = await funcionariosApi.updateFuncionario(funcionario.id, {
-        nome: funcionario.nome,
-        cpf: funcionario.cpf,
-        cargo: funcionario.cargo,
-        telefone: funcionario.telefone,
+      const atualizado = await voluntariosApi.updateVoluntario(voluntario.id, {
+        nome: voluntario.nome,
+        cpf: voluntario.cpf,
+        cargo: voluntario.cargo,
+        telefone: voluntario.telefone,
         status,
       });
-      setFuncionarios((prev) =>
+      setVoluntarios((prev) =>
         prev
-          .map((f) => (f.id === funcionario.id ? atualizado : f))
+          .map((v) => (v.id === voluntario.id ? atualizado : v))
           .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }))
       );
     } catch (err) {
@@ -74,8 +74,8 @@ export default function Voluntarios() {
   async function handleDelete(id) {
     setErroAcao('');
     try {
-      await funcionariosApi.deleteFuncionario(id);
-      setFuncionarios((prev) => prev.filter((f) => f.id !== id));
+      await voluntariosApi.deleteVoluntario(id);
+      setVoluntarios((prev) => prev.filter((v) => v.id !== id));
       setToast('Voluntário excluído com sucesso.');
     } catch (err) {
       setErroAcao(err instanceof ApiError ? err.message : 'Erro ao excluir voluntário.');
@@ -87,7 +87,7 @@ export default function Voluntarios() {
       title="Voluntários"
       subtitle="Cadastro e gerenciamento dos voluntários do abrigo"
       action={
-        <Link to="/funcionarios/novo" className="btn btn-success">
+        <Link to="/voluntarios/novo" className="btn btn-success">
           + Novo Voluntário
         </Link>
       }
@@ -101,7 +101,7 @@ export default function Voluntarios() {
             <p className="text-muted mb-0 py-3 text-center">Carregando voluntários...</p>
           ) : (
             <VoluntarioTable
-              funcionarios={funcionarios}
+              voluntarios={voluntarios}
               onDelete={handleDelete}
               onStatusChange={handleStatusChange}
               salvandoStatusId={salvandoStatusId}

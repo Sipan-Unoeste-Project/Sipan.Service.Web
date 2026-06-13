@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../api/client';
-import * as funcionariosApi from '../../../api/funcionariosApi';
+import * as voluntariosApi from '../../../api/voluntariosApi';
 import PageShell from '../../../components/PageShell';
 import VoluntarioForm from '../components/VoluntarioForm';
 
@@ -11,17 +11,17 @@ export default function NovoVoluntarioPage() {
   const [existingCPFs, setExistingCPFs] = useState([]);
 
   useEffect(() => {
-    funcionariosApi
-      .listFuncionarios()
-      .then((lista) => setExistingCPFs(lista.map((f) => f.cpf.replace(/\D/g, ''))))
+    voluntariosApi
+      .listVoluntarios()
+      .then((lista) => setExistingCPFs(lista.map((v) => v.cpf.replace(/\D/g, ''))))
       .catch(() => setExistingCPFs([]));
   }, []);
 
   async function handleSubmit(form) {
     setErro('');
     try {
-      await funcionariosApi.createFuncionario(form);
-      navigate('/funcionarios', { state: { toast: 'Voluntário cadastrado com sucesso!' } });
+      await voluntariosApi.createVoluntario(form);
+      navigate('/voluntarios', { state: { toast: 'Voluntário cadastrado com sucesso!' } });
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : 'Erro ao cadastrar voluntário.');
     }
@@ -32,7 +32,7 @@ export default function NovoVoluntarioPage() {
       title="Novo Voluntário"
       subtitle="Preencha os dados para adicionar um novo voluntário ao cadastro."
       action={
-        <Link to="/funcionarios" className="btn btn-outline-secondary">
+        <Link to="/voluntarios" className="btn btn-outline-secondary">
           Voltar à lista
         </Link>
       }
@@ -43,7 +43,7 @@ export default function NovoVoluntarioPage() {
           <VoluntarioForm
             existingCPFs={existingCPFs}
             onSubmit={handleSubmit}
-            onCancel={() => navigate('/funcionarios')}
+            onCancel={() => navigate('/voluntarios')}
             submitLabel="Cadastrar Voluntário"
           />
         </div>

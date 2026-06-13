@@ -84,9 +84,9 @@ CREATE TABLE usuarios (
 ) ENGINE=InnoDB
   COMMENT='Contas de acesso ao sistema';
 
--- Funcionários da equipe do abrigo
--- Tela: /funcionarios
-CREATE TABLE funcionarios (
+-- Voluntários da equipe do abrigo
+-- Tela: /voluntarios
+CREATE TABLE voluntarios (
   id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   nome        VARCHAR(150)    NOT NULL,
   cpf         VARCHAR(14)     NOT NULL,
@@ -96,11 +96,11 @@ CREATE TABLE funcionarios (
   created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uk_funcionarios_cpf (cpf),
-  KEY idx_funcionarios_cargo (cargo),
-  KEY idx_funcionarios_status (status)
+  UNIQUE KEY uk_voluntarios_cpf (cpf),
+  KEY idx_voluntarios_cargo (cargo),
+  KEY idx_voluntarios_status (status)
 ) ENGINE=InnoDB
-  COMMENT='Equipe e cargos do abrigo';
+  COMMENT='Equipe e voluntários do abrigo';
 
 -- Solicitações de adoção
 -- Tela: /adocoes
