@@ -21,14 +21,15 @@ import ApacFinanceiroPage from './modules/apac/pages/ApacFinanceiroPage';
 import ApacDespesasPage from './modules/apac/pages/ApacDespesasPage';
 import ApacSaudePage from './modules/apac/pages/ApacSaudePage';
 import ApacBalancetePage from './modules/apac/pages/ApacBalancetePage';
+import PaginaParceiros from './modules/parceiros/PaginaParceiros';
 
 function AppContent() {
   const location = useLocation();
-  const isQuemSomosRoute = location.pathname === '/quem-somos';
+  const isQuemSomosRoute = location.pathname === '/';
 
   const routes = (
     <Routes>
-      <Route path="/quem-somos" element={<QuemSomos />} />
+      <Route path="/" element={<QuemSomos />} />
       <Route path="/publico/contato" element={<Contato />} />
       <Route path="/publico/animais" element={<PaginaAnimais />} />
       <Route path="/publico/doacoes" element={<ApacDoacoesPage />} />
@@ -53,6 +54,7 @@ function AppContent() {
       <Route path="/apac/despesas" element={<ApacDespesasPage />} />
       <Route path="/apac/saude" element={<ApacSaudePage />} />
       <Route path="/apac/balancete" element={<ApacBalancetePage />} />
+       <Route path="/apac/parceiros" element={<PaginaParceiros />} />
     </Routes>
   );
 

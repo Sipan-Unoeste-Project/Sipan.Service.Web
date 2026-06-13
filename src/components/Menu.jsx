@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 const menuSections = [
   {
     items: [
-      { to: '/quem-somos', label: 'Quem somos' },
+      { to: '/', label: 'Quem somos' },
       { to: '/publico/animais', label: 'Animais' },
       { to: '/publico/doacoes', label: 'Doações' },
       { to: '/publico/campanhas', label: 'Campanhas' },
@@ -20,6 +20,7 @@ const menuSections = [
       { to: '/apac/balancete', label: 'Balancete' },
       { to: '/usuarios', label: 'Usuários' },
       { to: '/funcionarios', label: 'Funcionários' },
+      { to: '/apac/parceiros', label: 'Parceiros' },
     ],
   },
 ];

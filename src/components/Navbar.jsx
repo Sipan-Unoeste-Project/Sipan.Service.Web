@@ -31,7 +31,7 @@ export default function Navbar() {
         <div className="collapse navbar-collapse" id="navPublicContent">
           <ul className="navbar-nav me-auto gap-1">
             <li className="nav-item">
-              <NavLink end to="/quem-somos" className={linkClass} style={{ color: 'white' }}>
+              <NavLink end to="/" className={linkClass} style={{ color: 'white' }}>
                 Quem somos
               </NavLink>
             </li>
