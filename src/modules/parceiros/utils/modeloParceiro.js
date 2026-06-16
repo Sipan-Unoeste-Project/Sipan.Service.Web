@@ -14,5 +14,4 @@ export const TIPOS_PARCEIRO_DEFAULT = [
   'Pet Shop',
   'Fornecedor de Ração',
   'Farmácia',
-  'Outro',
 ];

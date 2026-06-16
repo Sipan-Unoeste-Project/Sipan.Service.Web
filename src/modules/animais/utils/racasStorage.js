@@ -1,33 +1,31 @@
-import { loadJson, saveJson } from '../../../storage/localJsonStorage';
+import { listarRacas as apiListarRacas, adicionarRaca as apiAdicionarRaca } from '../../../api/racasApi.js';
 
-const KEY = 'animais_racas_v1';
-
-function loadAll() {
-  return loadJson(KEY, {});
+export async function listarRacas(especie) {
+    if (!especie) return [];
+    try {
+        const racas = await apiListarRacas(especie);
+        return Array.isArray(racas) ? racas : [];
+    } catch (error) {
+        console.error('Erro ao carregar raças:', error);
+        return [];
+    }
 }
 
-export function listarRacas(especie) {
-  if (!especie) return [];
-  const all = loadAll();
-  const list = Array.isArray(all[especie]) ? [...all[especie]] : [];
-  return list.sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
+export async function adicionarNovaRaca(especie, raca) {
+    const nome = (raca || '').trim();
+    if (!especie || !nome) {
+        return await listarRacas(especie);
+    }
+
+    try {
+        await apiAdicionarRaca(especie, nome);
+        return await listarRacas(especie);
+    } catch (error) {
+        if (error.status === 409 || error.message?.toLowerCase().includes('duplicate') || 
+            error.message?.toLowerCase().includes('já existe')) {
+            throw new Error('Esta raça já está cadastrada para esta espécie.');
+        }
+        console.error('Erro ao adicionar raça:', error);
+        throw error;
+    }
 }
-
-export function adicionarRaca(especie, raca) {
-  if (!especie) throw new Error('Espécie é necessária para cadastrar raça');
-  const nome = (raca || '').trim();
-  if (!nome) return listarRacas(especie);
-
-  const all = loadAll();
-  const list = Array.isArray(all[especie]) ? all[especie] : [];
-  const exists = list.some((r) => r.toLowerCase() === nome.toLowerCase());
-  if (exists) return list;
-
-  list.push(nome);
-  const sorted = list.sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
-  all[especie] = sorted;
-  saveJson(KEY, all);
-  return sorted;
-}
-
-export default { listarRacas, adicionarRaca };

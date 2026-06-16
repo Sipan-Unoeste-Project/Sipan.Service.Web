@@ -65,6 +65,14 @@ CREATE TABLE animais (
 ) ENGINE=InnoDB
   COMMENT='Animais cadastrados no abrigo';
 
+CREATE TABLE IF NOT EXISTS animais_racas (
+  id       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  especie  VARCHAR(100)    NOT NULL,
+  nome     VARCHAR(100)    NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_raca_especie_nome (especie, nome)
+) ENGINE=InnoDB;
+
 -- Usuários com acesso ao sistema (login)
 -- Tela: /usuarios
 CREATE TABLE usuarios (

@@ -1,7 +1,5 @@
 /** Opções de navegação pesquisáveis (menu + início). */
 export const NAV_OPTIONS = [
-  { to: '/pessoas', label: 'Pessoas', desc: 'Doadores e adotantes', group: 'Cadastros' },
-  { to: '/animais', label: 'Animais', desc: 'Cadastro e acompanhamento dos animais', group: 'Cadastros' },
   { to: '/adocoes', label: 'Adoções', desc: 'Solicitações de adoção', group: 'Cadastros', menu: 'admin' },
   { to: '/usuarios', label: 'Usuários', desc: 'Acesso ao sistema e permissões', group: 'Cadastros', menu: 'admin' },
   { to: '/voluntarios', label: 'Voluntários', desc: 'Equipe e voluntários do abrigo', group: 'Cadastros', menu: 'admin' },
@@ -15,6 +13,7 @@ export const NAV_OPTIONS = [
   { to: '/apac/balancete', label: 'Balancete', desc: 'Relatório consolidado', group: 'APAC', menu: 'admin' },
   { to: '/apac/parceiros', label: 'Parceiros', desc: 'Organizações e empresas colaboradoras', group: 'APAC', menu: 'admin' },
   { to: '/', label: 'Quem somos', desc: 'Sobre a instituição', group: 'Público', menu: 'public' },
+  { to: '/pessoas', label: 'Pessoas', desc: 'Doadores e adotantes', group: 'Cadastros', menu: 'public' },
   { to: '/publico/animais', label: 'Animais', desc: 'Animais para adoção', group: 'Público', menu: 'public' },
   { to: '/publico/doacoes', label: 'Doações', desc: 'Como doar', group: 'Público', menu: 'public' },
   { to: '/publico/campanhas', label: 'Campanhas', desc: 'Campanhas públicas', group: 'Público', menu: 'public' },

@@ -1,40 +1,63 @@
-import { loadJson, saveJson } from '../../../storage/localJsonStorage';
+import {
+  listarParceiros as apiListarParceiros,
+  createParceiro,
+  updateParceiro,
+  deleteParceiro,
+  listarTiposParceiro as apiListarTipos,
+  adicionarTipoParceiro as apiAdicionarTipo,
+} from '../../../api/parceirosApi.js';
 
-const KEY = 'sipan_parceiros_v1';
+export const listarParceiros = (params) => apiListarParceiros(params);
 
-function loadAll() {
-  return loadJson(KEY, []);
+export const adicionarParceiro = async (parceiro) => {
+  return createParceiro(toParceiroPayload(parceiro));
+};
+
+export const atualizarParceiro = async (id, parceiroAtualizado) => {
+  return updateParceiro(id, toParceiroPayload(parceiroAtualizado));
+};
+
+export const excluirParceiro = (id) => deleteParceiro(id);
+
+export async function listarTiposParceiro() {
+  try {
+    const tipos = await apiListarTipos();
+    if (Array.isArray(tipos)) {
+      return tipos.map(t => (typeof t === 'string' ? t : t.nome || t)).filter(Boolean);
+    }
+    return [];
+  } catch (error) {
+    console.error('Erro ao listar tipos de parceiro:', error);
+    return [];
+  }
 }
 
-function gerarId() {
-  return `parceiro_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+export async function adicionarTipoParceiro(tipo) {
+  const nome = (tipo || '').trim();
+  if (!nome) {
+    return await listarTiposParceiro();
+  }
+
+  try {
+    await apiAdicionarTipo(nome);
+    return await listarTiposParceiro(); 
+  } catch (error) {
+    if (error.status === 409 || error.message?.toLowerCase().includes('duplicado') || 
+        error.message?.toLowerCase().includes('já existe')) {
+      throw new Error('Este tipo de parceiro já existe.');
+    }
+    throw error;
+  }
 }
 
-export function listarParceiros() {
-  const lista = loadAll();
-  return Array.isArray(lista) ? lista : [];
-}
-
-export function adicionarParceiro(parceiro) {
-  const lista = listarParceiros();
-  const novo = { ...parceiro, id: gerarId() };
-  saveJson(KEY, [...lista, novo]);
-  return novo;
-}
-
-export function atualizarParceiro(id, parceiroAtualizado) {
-  const lista = listarParceiros();
-  const index = lista.findIndex((p) => p.id === id);
-  if (index === -1) throw new Error('Parceiro não encontrado');
-  lista[index] = { ...lista[index], ...parceiroAtualizado, id };
-  saveJson(KEY, lista);
-  return lista[index];
-}
-
-export function excluirParceiro(id) {
-  const lista = listarParceiros();
-  const nova = lista.filter((p) => p.id !== id);
-  saveJson(KEY, nova);
-}
-
-export default { listarParceiros, adicionarParceiro, atualizarParceiro, excluirParceiro };
+export const toParceiroPayload = (parceiro) => ({
+  nome: (parceiro.nome || '').trim(),
+  cpfCnpj: (parceiro.cpfCnpj || '').trim(),
+  tipoNome: (parceiro.tipo || '').trim(),
+  tipoId: parceiro.tipoId || null,
+  telefone: (parceiro.telefone || '').trim(),
+  email: (parceiro.email || '').trim(),
+  endereco: (parceiro.endereco || '').trim(),
+  status: parceiro.status || 'ativo',
+  observacoes: (parceiro.observacoes || '').trim() || null,
+});

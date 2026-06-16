@@ -8,7 +8,7 @@ import {
 export const toParceiroPayload = (parceiro) => ({
   nome: (parceiro.nome || '').trim(),
   cpfCnpj: (parceiro.cpfCnpj || '').replace(/\D/g, ''),
-  tipo: parceiro.tipo || '',
+  tipoNome: (parceiro.tipo || parceiro.tipoNome || '').trim(),
   telefone: (parceiro.telefone || '').trim(),
   email: (parceiro.email || '').trim(),
   endereco: (parceiro.endereco || '').trim(),

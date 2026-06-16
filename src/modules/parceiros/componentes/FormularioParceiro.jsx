@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { adicionarParceiro, atualizarParceiro } from '../utils/storageParceiros';
+import { 
+  listarParceiros, 
+  adicionarParceiro, 
+  atualizarParceiro, 
+  listarTiposParceiro, 
+  adicionarTipoParceiro 
+} from '../utils/storageParceiros';
 import { modeloParceiro } from '../utils/modeloParceiro';
-import {
-  listarTiposParceiro,
-  adicionarTipoParceiro,
-} from '../utils/tiposParceiroStorage';
 import {
   formatarCpfCnpj,
   validarCpfCnpj,
@@ -12,7 +14,6 @@ import {
   formatarTelefone,
   validarTelefone,
 } from '../utils/validacaoCpfCnpj';
-import { listarParceiros } from '../utils/storageParceiros';
 
 const FormularioParceiro = ({
   parceiroParaEditar = null,
@@ -30,7 +31,11 @@ const FormularioParceiro = ({
   const inputTipoRef = useRef(null);
 
   useEffect(() => {
-    setTipos(listarTiposParceiro());
+    const carregarTipos = async () => {
+      const lista = await listarTiposParceiro();
+      setTipos(lista);
+    };
+    carregarTipos();
   }, []);
 
   useEffect(() => {
@@ -59,7 +64,7 @@ const FormularioParceiro = ({
     }
   };
 
-  const validarFormulario = () => {
+  const validarFormulario = async () => {
     const novosErros = {};
 
     if (!form.nome?.trim()) novosErros.nome = 'Campo obrigatório';
@@ -69,15 +74,19 @@ const FormularioParceiro = ({
     } else if (!validarCpfCnpj(form.cpfCnpj)) {
       novosErros.cpfCnpj = `${tipoCpfCnpj(form.cpfCnpj)} inválido`;
     } else {
-      const todos = listarParceiros();
-      const cpfCnpjLimpo = form.cpfCnpj.replace(/\D/g, '');
-      const duplicado = todos.find(
-        (p) =>
-          p.cpfCnpj?.replace(/\D/g, '') === cpfCnpjLimpo &&
-          p.id !== parceiroParaEditar?.id
-      );
-      if (duplicado) {
-        novosErros.cpfCnpj = `Este ${tipoCpfCnpj(form.cpfCnpj)} já está cadastrado`;
+      try {
+        const todos = await listarParceiros();
+        const cpfCnpjLimpo = form.cpfCnpj.replace(/\D/g, '');
+        const duplicado = todos.find(
+          (p) =>
+            p.cpfCnpj?.replace(/\D/g, '') === cpfCnpjLimpo &&
+            p.id !== parceiroParaEditar?.id
+        );
+        if (duplicado) {
+          novosErros.cpfCnpj = `Este ${tipoCpfCnpj(form.cpfCnpj)} já está cadastrado`;
+        }
+      } catch (err) {
+        console.error('Erro ao verificar duplicidade:', err);
       }
     }
 
@@ -101,10 +110,11 @@ const FormularioParceiro = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validarFormulario()) return;
+    if (!(await validarFormulario())) return;
 
     const payload = {
       ...form,
+      tipo: form.tipo,
       id: parceiroParaEditar?.id,
     };
 
@@ -121,19 +131,18 @@ const FormularioParceiro = ({
         setForm(modeloParceiro);
       }
     } catch (error) {
-      onFeedback?.('Erro ao salvar. Verifique os campos e tente novamente.', 'error');
+      onFeedback?.(error.message || 'Erro ao salvar. Verifique os campos.', 'error');
       console.error(error);
     }
   };
 
-  const tiposFiltrados = tipos.filter((t) =>
-    t.toLowerCase().includes((form.tipo || '').toLowerCase())
-  );
+  const tiposFiltrados = tipos
+    .map(t => (typeof t === 'string' ? t : t?.nome || ''))
+    .filter(t => t.toLowerCase().includes((form.tipo || '').toLowerCase()));
 
   return (
     <form onSubmit={handleSubmit} noValidate>
       <div className="row g-3">
-
         <div className="col-12 col-md-6">
           <label className="form-label">
             Nome / Razão Social <span style={{ color: 'var(--bs-danger)' }}>*</span>
@@ -185,15 +194,11 @@ const FormularioParceiro = ({
               onFocus={() => {
                 if (tipos.length) setShowSuggestions(true);
               }}
-              onBlur={() => {
-                setTimeout(() => setShowSuggestions(false), 150);
-              }}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
               onKeyDown={(e) => {
                 if (e.key === 'ArrowDown') {
                   e.preventDefault();
-                  setHighlightIndex((i) =>
-                    Math.min(i + 1, tiposFiltrados.length - 1)
-                  );
+                  setHighlightIndex((i) => Math.min(i + 1, tiposFiltrados.length - 1));
                   setShowSuggestions(true);
                 } else if (e.key === 'ArrowUp') {
                   e.preventDefault();
@@ -266,8 +271,7 @@ const FormularioParceiro = ({
                     style={{
                       padding: '0.4rem 0.75rem',
                       cursor: 'pointer',
-                      background:
-                        idx === highlightIndex ? '#f0f0f0' : 'transparent',
+                      background: idx === highlightIndex ? '#f0f0f0' : 'transparent',
                     }}
                     onMouseEnter={() => setHighlightIndex(idx)}
                     onMouseDown={() => {
@@ -291,22 +295,24 @@ const FormularioParceiro = ({
                 placeholder="Nome do novo tipo"
                 value={newTipo}
                 onChange={(e) => setNewTipo(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') e.preventDefault();
-                }}
               />
               <button
                 type="button"
                 className="btn btn-primary"
-                onClick={() => {
+                onClick={async () => {
                   const nome = (newTipo || '').trim();
                   if (!nome) return;
-                  const novos = adicionarTipoParceiro(nome);
-                  setTipos(novos);
-                  setForm((prev) => ({ ...prev, tipo: nome }));
-                  setShowAddTipo(false);
-                  setNewTipo('');
-                  onFeedback?.('Tipo adicionado com sucesso', 'success');
+
+                  try {
+                    const novosTipos = await adicionarTipoParceiro(nome);
+                    setTipos(novosTipos);
+                    setForm((prev) => ({ ...prev, tipo: nome }));
+                    setShowAddTipo(false);
+                    setNewTipo('');
+                    onFeedback?.('Tipo adicionado com sucesso!', 'success');
+                  } catch (error) {
+                    onFeedback?.(error.message || 'Erro ao adicionar tipo', 'error');
+                  }
                 }}
               >
                 Salvar
@@ -415,7 +421,6 @@ const FormularioParceiro = ({
             {parceiroParaEditar ? 'Atualizar Parceiro' : 'Cadastrar Parceiro'}
           </button>
         </div>
-
       </div>
     </form>
   );

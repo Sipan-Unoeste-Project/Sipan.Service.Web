@@ -60,9 +60,11 @@ export default function PaginaAnimais() {
 
   const animaisFiltrados = animais.filter(
     (animal) =>
-      animal.nome?.toLowerCase().includes(busca.toLowerCase()) ||
-      animal.especie?.toLowerCase().includes(busca.toLowerCase()) ||
-      animal.raca?.toLowerCase().includes(busca.toLowerCase())
+    animal.nome?.toLowerCase().includes(busca.toLowerCase()) ||
+    animal.especie?.toLowerCase().includes(busca.toLowerCase()) ||
+    animal.raca?.toLowerCase().includes(busca.toLowerCase())
+  ).sort((a, b) =>
+    (a.nome || '').localeCompare(b.nome || '', 'pt', { sensitivity: 'base' })
   );
 
   return (

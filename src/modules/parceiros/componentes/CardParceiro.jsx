@@ -17,9 +17,9 @@ const CardParceiro = ({ parceiro, onEditar, onExcluir }) => {
           </span>
         </div>
 
-        {parceiro.tipo && (
+        {(parceiro.tipo || parceiro.tipoNome) && (
           <span className="badge bg-secondary" style={{ alignSelf: 'flex-start' }}>
-            {parceiro.tipo}
+            {parceiro.tipo || parceiro.tipoNome}
           </span>
         )}
 
