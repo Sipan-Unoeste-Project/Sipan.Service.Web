@@ -5,20 +5,37 @@ import StatusToggle from '../../../components/StatusToggle';
 
 const PERMISSOES = ['Administrador', 'Financeiro', 'Veterinário', 'Voluntário'];
 
+const COLS = [
+  { key: 'nome', label: 'Nome' },
+  { key: 'login', label: 'Login' },
+  { key: 'email', label: 'E-mail' },
+  { key: 'permissao', label: 'Permissão' },
+  { key: 'status', label: 'Status' },
+];
+
 export default function UsuarioTable({ usuarios, onDelete, onStatusChange, salvandoStatusId }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('todos');
   const [confirmId, setConfirmId] = useState(null);
+  const [sortCol, setSortCol] = useState('nome');
+  const [sortDir, setSortDir] = useState(1);
+
+  function handleSort(col) {
+    if (sortCol === col) setSortDir((d) => d * -1);
+    else { setSortCol(col); setSortDir(1); }
+  }
+
+  function sortIcon(col) {
+    if (sortCol !== col) return ' ↕';
+    return sortDir === 1 ? ' ↑' : ' ↓';
+  }
 
   const filtered = usuarios
     .filter((u) => {
       let matchFilter = true;
-      if (filter === 'Ativo' || filter === 'Inativo') {
-        matchFilter = u.status === filter;
-      } else if (PERMISSOES.includes(filter)) {
-        matchFilter = u.permissao === filter;
-      }
+      if (filter === 'Ativo' || filter === 'Inativo') matchFilter = u.status === filter;
+      else if (PERMISSOES.includes(filter)) matchFilter = u.permissao === filter;
       const q = search.toLowerCase();
       const matchSearch =
         !q ||
@@ -27,7 +44,11 @@ export default function UsuarioTable({ usuarios, onDelete, onStatusChange, salva
         (u.email || '').toLowerCase().includes(q);
       return matchFilter && matchSearch;
     })
-    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }));
+    .sort((a, b) => {
+      const va = (a[sortCol] ?? '').toLowerCase();
+      const vb = (b[sortCol] ?? '').toLowerCase();
+      return va.localeCompare(vb, 'pt-BR', { sensitivity: 'base' }) * sortDir;
+    });
 
   const confirmTarget = confirmId ? usuarios.find((u) => u.id === confirmId) : null;
 
@@ -42,7 +63,6 @@ export default function UsuarioTable({ usuarios, onDelete, onStatusChange, salva
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-
         <div className="btn-group flex-wrap" role="group" aria-label="Filtros">
           {['todos', 'Ativo', 'Inativo'].map((s) => (
             <button
@@ -65,7 +85,6 @@ export default function UsuarioTable({ usuarios, onDelete, onStatusChange, salva
             </button>
           ))}
         </div>
-
         <span className="ms-auto text-muted small">
           {filtered.length} {filtered.length === 1 ? 'resultado' : 'resultados'}
         </span>
@@ -81,11 +100,16 @@ export default function UsuarioTable({ usuarios, onDelete, onStatusChange, salva
           <table className="table table-hover align-middle mb-0">
             <thead className="table-light">
               <tr>
-                <th>Nome</th>
-                <th>Login</th>
-                <th>E-mail</th>
-                <th>Permissão</th>
-                <th>Status</th>
+                {COLS.map(({ key, label }) => (
+                  <th
+                    key={key}
+                    onClick={() => handleSort(key)}
+                    style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
+                  >
+                    {label}
+                    <span className="text-muted" style={{ fontSize: 12 }}>{sortIcon(key)}</span>
+                  </th>
+                ))}
                 <th>Ações</th>
               </tr>
             </thead>
@@ -107,14 +131,12 @@ export default function UsuarioTable({ usuarios, onDelete, onStatusChange, salva
                   <td>
                     <button
                       className="btn btn-sm btn-outline-secondary me-1"
-                      title="Editar"
                       onClick={() => navigate(`/usuarios/${u.id}/editar`)}
                     >
                       Editar
                     </button>
                     <button
                       className="btn btn-sm btn-outline-danger"
-                      title="Excluir"
                       onClick={() => setConfirmId(u.id)}
                     >
                       Excluir
@@ -130,10 +152,7 @@ export default function UsuarioTable({ usuarios, onDelete, onStatusChange, salva
       <ConfirmModal
         show={!!confirmId}
         nome={confirmTarget?.nome}
-        onConfirm={() => {
-          onDelete(confirmId);
-          setConfirmId(null);
-        }}
+        onConfirm={() => { onDelete(confirmId); setConfirmId(null); }}
         onCancel={() => setConfirmId(null)}
       />
     </>

@@ -5,20 +5,37 @@ import StatusToggle from '../../../components/StatusToggle';
 
 const AREAS = ['Administrador', 'Financeiro', 'Voluntário', 'Veterinário', 'Recepcionista', 'Auxiliar'];
 
+const COLS = [
+  { key: 'nome', label: 'Nome' },
+  { key: 'cpf', label: 'CPF' },
+  { key: 'cargo', label: 'Área de atuação' },
+  { key: 'telefone', label: 'Telefone' },
+  { key: 'status', label: 'Status' },
+];
+
 export default function VoluntarioTable({ voluntarios, onDelete, onStatusChange, salvandoStatusId }) {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('todos');
   const [confirmId, setConfirmId] = useState(null);
+  const [sortCol, setSortCol] = useState('nome');
+  const [sortDir, setSortDir] = useState(1); // 1 = A→Z, -1 = Z→A
+
+  function handleSort(col) {
+    if (sortCol === col) setSortDir((d) => d * -1);
+    else { setSortCol(col); setSortDir(1); }
+  }
+
+  function sortIcon(col) {
+    if (sortCol !== col) return ' ↕';
+    return sortDir === 1 ? ' ↑' : ' ↓';
+  }
 
   const filtered = voluntarios
     .filter((f) => {
       let matchFilter = true;
-      if (filter === 'Ativo' || filter === 'Inativo') {
-        matchFilter = f.status === filter;
-      } else if (AREAS.includes(filter)) {
-        matchFilter = f.cargo === filter;
-      }
+      if (filter === 'Ativo' || filter === 'Inativo') matchFilter = f.status === filter;
+      else if (AREAS.includes(filter)) matchFilter = f.cargo === filter;
       const q = search.toLowerCase();
       const matchSearch =
         !q ||
@@ -28,7 +45,11 @@ export default function VoluntarioTable({ voluntarios, onDelete, onStatusChange,
         (f.cargo || '').toLowerCase().includes(q);
       return matchFilter && matchSearch;
     })
-    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' }));
+    .sort((a, b) => {
+      const va = (a[sortCol] ?? '').toLowerCase();
+      const vb = (b[sortCol] ?? '').toLowerCase();
+      return va.localeCompare(vb, 'pt-BR', { sensitivity: 'base' }) * sortDir;
+    });
 
   const confirmTarget = confirmId ? voluntarios.find((v) => v.id === confirmId) : null;
 
@@ -43,7 +64,6 @@ export default function VoluntarioTable({ voluntarios, onDelete, onStatusChange,
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-
         <div className="btn-group flex-wrap" role="group" aria-label="Filtros">
           {['todos', 'Ativo', 'Inativo'].map((s) => (
             <button
@@ -66,7 +86,6 @@ export default function VoluntarioTable({ voluntarios, onDelete, onStatusChange,
             </button>
           ))}
         </div>
-
         <span className="ms-auto text-muted small">
           {filtered.length} {filtered.length === 1 ? 'resultado' : 'resultados'}
         </span>
@@ -82,11 +101,16 @@ export default function VoluntarioTable({ voluntarios, onDelete, onStatusChange,
           <table className="table table-hover align-middle mb-0">
             <thead className="table-light">
               <tr>
-                <th>Nome</th>
-                <th>CPF</th>
-                <th>Área de atuação</th>
-                <th>Telefone</th>
-                <th>Status</th>
+                {COLS.map(({ key, label }) => (
+                  <th
+                    key={key}
+                    onClick={() => handleSort(key)}
+                    style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
+                  >
+                    {label}
+                    <span className="text-muted" style={{ fontSize: 12 }}>{sortIcon(key)}</span>
+                  </th>
+                ))}
                 <th>Ações</th>
               </tr>
             </thead>
@@ -108,14 +132,12 @@ export default function VoluntarioTable({ voluntarios, onDelete, onStatusChange,
                   <td>
                     <button
                       className="btn btn-sm btn-outline-secondary me-1"
-                      title="Editar"
                       onClick={() => navigate(`/voluntarios/${f.id}/editar`)}
                     >
                       Editar
                     </button>
                     <button
                       className="btn btn-sm btn-outline-danger"
-                      title="Excluir"
                       onClick={() => setConfirmId(f.id)}
                     >
                       Excluir
@@ -131,10 +153,7 @@ export default function VoluntarioTable({ voluntarios, onDelete, onStatusChange,
       <ConfirmModal
         show={!!confirmId}
         nome={confirmTarget?.nome}
-        onConfirm={() => {
-          onDelete(confirmId);
-          setConfirmId(null);
-        }}
+        onConfirm={() => { onDelete(confirmId); setConfirmId(null); }}
         onCancel={() => setConfirmId(null)}
       />
     </>
