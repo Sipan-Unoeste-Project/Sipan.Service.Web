@@ -15,6 +15,8 @@
   /* Bootstrap — primário verde (substitui azul padrão) */
   --bs-primary: #1a7f5a;
   --bs-primary-rgb: 26, 127, 90;
+  --bs-success: #16744a;
+  --bs-success-rgb: 22, 116, 74;
   --bs-link-color: #1a7f5a;
   --bs-link-hover-color: #146b4a;
   --bs-info: #1a7f5a;
@@ -164,6 +166,30 @@ body {
 }
 
 /* Navbar — reset do <li> e hover só no link */
+.app-shell .navbar .btn-light {
+  --bs-btn-color: #16744a;
+  --bs-btn-bg: #fff;
+  --bs-btn-border-color: #fff;
+  --bs-btn-hover-color: #16744a;
+  --bs-btn-hover-bg: #fff;
+  --bs-btn-hover-border-color: #fff;
+  --bs-btn-active-color: #16744a;
+  --bs-btn-active-bg: #fff;
+  --bs-btn-active-border-color: #fff;
+  color: #16744a;
+  background-color: #fff;
+  border-color: #fff;
+}
+
+.app-shell .navbar .btn-light:hover,
+.app-shell .navbar .btn-light:focus,
+.app-shell .navbar .btn-light:active {
+  color: #16744a;
+  background-color: #fff;
+  border-color: #fff;
+  box-shadow: none;
+}
+
 .app-shell .navbar .nav-item {
   background: transparent !important;
   padding: 0;
@@ -462,6 +488,29 @@ body {
 }
 .btn-primary:hover { opacity: 0.88; }
 
+.btn-success {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: #16744a;
+  --bs-btn-border-color: #16744a;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #125c3f;
+  --bs-btn-hover-border-color: #125c3f;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #0f4d35;
+  --bs-btn-active-border-color: #0f4d35;
+}
+
+.btn-outline-success {
+  --bs-btn-color: #16744a;
+  --bs-btn-border-color: #16744a;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #16744a;
+  --bs-btn-hover-border-color: #16744a;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #125c3f;
+  --bs-btn-active-border-color: #125c3f;
+}
+
 .btn-secondary {
   padding: 9px 18px;
   background: var(--color-surface);
@@ -487,6 +536,31 @@ body {
   transition: opacity var(--transition);
 }
 .btn-danger:hover { opacity: 0.88; }
+
+.btn.btn-no-hover:hover,
+.btn.btn-no-hover:focus,
+.btn.btn-no-hover:active {
+  opacity: 1;
+  box-shadow: none;
+  filter: none;
+}
+
+.btn.btn-success.btn-no-hover:hover,
+.btn.btn-success.btn-no-hover:focus,
+.btn.btn-success.btn-no-hover:active {
+  color: #fff;
+  background-color: #16744a;
+  border-color: #16744a;
+}
+
+.btn.btn-danger.btn-no-hover:hover,
+.btn.btn-danger.btn-no-hover:focus,
+.btn.btn-danger.btn-no-hover:active {
+  color: #fff;
+  background-color: var(--color-danger);
+  border-color: var(--color-danger);
+  opacity: 1;
+}
 
 /* ===== Table ===== */
 .table-section {
@@ -1066,9 +1140,19 @@ input.invalid, select.invalid, textarea.invalid { border-color: var(--color-dang
   outline: 0;
 }
 
+.form-control:focus,
+.form-control:focus-visible,
+.form-select:focus,
+.form-select:focus-visible {
+  border-color: #16744a !important;
+  box-shadow: 0 0 0 0.25rem rgba(22, 116, 74, 0.25) !important;
+  outline: 0;
+}
+
+.form-control:focus,
 .form-select:focus {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 0.25rem rgba(26, 127, 90, 0.25);
+  --bs-form-control-focus-border-color: #16744a;
+  --bs-form-control-focus-box-shadow: 0 0 0 0.25rem rgba(22, 116, 74, 0.25);
 }
 
 .sipan-select.is-invalid .sipan-select-toggle {

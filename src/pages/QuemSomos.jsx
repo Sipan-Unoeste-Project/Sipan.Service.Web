@@ -25,10 +25,10 @@ export default function QuemSomos() {
               </p>
 
               <div className="d-flex gap-2">
-                <a href="/publico/animais" className="btn btn-lg" style={{ backgroundColor: '#16744a', color: 'white' }}>
+                <a href="/publico/animais" className="btn btn-outline-success btn-lg">
                   Ver Animais
                 </a>
-                <a href="/publico/doacoes" className="btn btn-outline-success btn-lg" style={{ borderColor: '#16744a', color: '#16744a' }}>
+                <a href="/publico/doacoes" className="btn btn-outline-success btn-lg">
                   Fazer Doação
                 </a>
               </div>

@@ -1,4 +1,8 @@
+import { clearAuthToken, getAuthToken } from './authStorage';
+
 const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5089').replace(/\/$/, '');
+
+export const AUTH_UNAUTHORIZED_EVENT = 'sipan:unauthorized';
 
 export class ApiError extends Error {
   constructor(message, status) {
@@ -30,6 +34,11 @@ export async function apiRequest(path, options = {}) {
     headers['Content-Type'] = 'application/json';
   }
 
+  const token = getAuthToken();
+  if (token && !headers.Authorization) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   let res;
   try {
     res = await fetch(url, { ...options, headers });
@@ -44,6 +53,10 @@ export async function apiRequest(path, options = {}) {
   if (res.status === 204) return null;
 
   if (!res.ok) {
+    if (res.status === 401 && getAuthToken() && !path.startsWith('/api/auth/login')) {
+      clearAuthToken();
+      window.dispatchEvent(new CustomEvent(AUTH_UNAUTHORIZED_EVENT));
+    }
     throw new ApiError(await readErrorMessage(res), res.status);
   }
 

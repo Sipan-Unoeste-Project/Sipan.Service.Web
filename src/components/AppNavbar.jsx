@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { useNavSearch } from '../context/NavSearchContext';
 
 export default function AppNavbar() {
   const navigate = useNavigate();
+  const { usuario, sair } = useAuth();
   const { termo, setTermo, opcoesFiltradas, limparBusca, buscaAtiva } = useNavSearch();
   const [dropdownAberto, setDropdownAberto] = useState(false);
   const buscaRef = useRef(null);
@@ -26,7 +28,7 @@ export default function AppNavbar() {
       return;
     }
     if (buscaAtiva) {
-      navigate('/');
+      navigate('/inicio');
       setDropdownAberto(true);
     }
   }
@@ -39,7 +41,7 @@ export default function AppNavbar() {
   return (
     <nav className="navbar navbar-light shadow-sm" style={{ backgroundColor: '#16744a' }}>
       <div className="container d-flex align-items-center justify-content-between px-3">
-        <NavLink className="navbar-brand fw-bold fs-5 d-flex align-items-center gap-2 text-white" to="/">
+        <NavLink className="navbar-brand fw-bold fs-5 d-flex align-items-center gap-2 text-white" to="/inicio">
           <img
             src="/logo-apac.png"
             alt="Logo APAC"
@@ -75,7 +77,7 @@ export default function AppNavbar() {
                 onChange={(e) => {
                   setTermo(e.target.value);
                   setDropdownAberto(true);
-                  if (e.target.value.trim()) navigate('/');
+                  if (e.target.value.trim()) navigate('/inicio');
                 }}
                 onFocus={() => buscaAtiva && setDropdownAberto(true)}
               />
@@ -112,9 +114,21 @@ export default function AppNavbar() {
           )}
         </div>
 
-        <button className="btn" style={{ color: 'white', fontSize: '1.5rem' }} title="Login">
-          👤
-        </button>
+        <div className="d-flex align-items-center gap-2">
+          <span className="text-white small d-none d-md-inline">
+            {usuario?.nome}
+          </span>
+          <button
+            type="button"
+            className="btn btn-light btn-sm"
+            onClick={async () => {
+              await sair();
+              navigate('/login');
+            }}
+          >
+            Sair
+          </button>
+        </div>
       </div>
     </nav>
   );

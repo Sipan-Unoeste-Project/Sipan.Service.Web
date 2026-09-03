@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ApiError } from '../../../api/client';
+import { useAuth } from '../../../context/AuthContext';
 import * as campanhasApi from '../../../api/campanhasApi';
 import { getDataAtualIso } from '../../../utils/dates';
 import PageShell from '../../../components/PageShell';
@@ -12,9 +14,13 @@ import { parseValor, formatBRL } from '../storage/apacStorage';
 const emptyForm = { nome: '', descricao: '', data: getDataAtualIso(), meta: '' };
 
 export default function ApacCampanhasPage() {
+  const location = useLocation();
+  const { autenticado } = useAuth();
+  const modoPublico = location.pathname.startsWith('/publico') || !autenticado;
   const [dados, setDados] = useState({ ativas: [], encerradas: [] });
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('ativas');
+  const [mostrarForm, setMostrarForm] = useState(false);
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [msg, setMsg] = useTimedMessage(3000);
@@ -42,8 +48,8 @@ export default function ApacCampanhasPage() {
   }, [setErro]);
 
   useEffect(() => {
-    if (tab !== 'nova') carregar();
-  }, [carregar, tab]);
+    if (!mostrarForm) carregar();
+  }, [carregar, mostrarForm, tab]);
 
   function abrirForm(campanha = null) {
     if (campanha) {
@@ -58,7 +64,13 @@ export default function ApacCampanhasPage() {
       setEditando(null);
       setForm({ ...emptyForm, data: getDataAtualIso() });
     }
-    setTab('nova');
+    setMostrarForm(true);
+  }
+
+  function fecharForm() {
+    setMostrarForm(false);
+    setEditando(null);
+    setForm({ ...emptyForm, data: getDataAtualIso() });
   }
 
   async function salvar(e) {
@@ -74,6 +86,7 @@ export default function ApacCampanhasPage() {
         setMsg('Campanha criada.');
       }
       setTab('ativas');
+      setMostrarForm(false);
       setEditando(null);
       setForm({ ...emptyForm, data: getDataAtualIso() });
       await carregar();
@@ -119,27 +132,20 @@ export default function ApacCampanhasPage() {
       title="Campanhas"
       subtitle="Eventos e metas de arrecadação"
       action={
-        <button type="button" className="btn btn-success" onClick={() => abrirForm()}>
-          + Nova campanha
-        </button>
+        modoPublico || mostrarForm ? null : (
+          <button type="button" className="btn btn-success" onClick={() => abrirForm()}>
+            Nova Campanha
+          </button>
+        )
       }
     >
       <FeedbackAlert message={msg} />
       <FeedbackAlert message={erro} variant="danger" />
 
-      <ApacTabs
-        active={tab}
-        onChange={setTab}
-        tabs={[
-          { id: 'ativas', label: `Ativas (${dados.ativas.length})` },
-          { id: 'encerradas', label: `Encerradas (${dados.encerradas.length})` },
-          { id: 'nova', label: editando ? 'Editar' : 'Nova campanha' },
-        ]}
-      />
-
-      {tab === 'nova' && (
+      {mostrarForm ? (
         <div className="card border-0 shadow-sm mb-4">
           <div className="card-body">
+            <h5 className="fw-semibold mb-3">{editando ? 'Editar campanha' : 'Nova campanha'}</h5>
             <form onSubmit={salvar}>
               <div className="row g-3">
                 <div className="col-md-6">
@@ -184,82 +190,86 @@ export default function ApacCampanhasPage() {
                 <button type="submit" className="btn btn-success">
                   Salvar
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={() => {
-                    setTab('ativas');
-                    setEditando(null);
-                  }}
-                >
+                <button type="button" className="btn btn-outline-secondary" onClick={fecharForm}>
                   Cancelar
                 </button>
               </div>
             </form>
           </div>
         </div>
-      )}
+      ) : (
+        <>
+          <ApacTabs
+            active={tab}
+            onChange={setTab}
+            tabs={[
+              { id: 'ativas', label: `Ativas (${dados.ativas.length})` },
+              { id: 'encerradas', label: `Encerradas (${dados.encerradas.length})` },
+            ]}
+          />
 
-      {(tab === 'ativas' || tab === 'encerradas') && (
-        <div className="row g-3">
-          {loading ? (
-            <div className="col-12 text-muted text-center py-4">Carregando...</div>
-          ) : lista.length === 0 ? (
-            <div className="col-12 text-muted text-center py-4">Nenhuma campanha.</div>
-          ) : (
-            lista.map((c) => {
-              const pct = c.meta > 0 ? Math.min(100, (c.arrecadado / c.meta) * 100) : 0;
-              return (
-                <div className="col-md-6" key={c.id}>
-                  <div className="card border-0 shadow-sm h-100">
-                    <div className="card-body">
-                      <div className="d-flex justify-content-between align-items-start mb-2">
-                        <h5 className="fw-semibold mb-0">{c.nome}</h5>
-                        <span className="badge bg-success">{c.status}</span>
-                      </div>
-                      <p className="text-muted small">{c.descricao}</p>
-                      <p className="small mb-2">Data: {c.data}</p>
-                      <div className="progress mb-2" style={{ height: 8 }}>
-                        <div
-                          className="progress-bar bg-success"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <p className="small mb-3">
-                        {formatBRL(c.arrecadado)} de {formatBRL(c.meta)} ({pct.toFixed(0)}%)
-                      </p>
-                      <div className="d-flex flex-wrap gap-1">
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-success"
-                          onClick={() => abrirForm(c)}
-                        >
-                          Editar
-                        </button>
-                        {tab === 'ativas' && (
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-success"
-                            onClick={() => registrarDoacao(c.id)}
-                          >
-                            Doar
-                          </button>
+          <div className="row g-3">
+            {loading ? (
+              <div className="col-12 text-muted text-center py-4">Carregando...</div>
+            ) : lista.length === 0 ? (
+              <div className="col-12 text-muted text-center py-4">Nenhuma campanha.</div>
+            ) : (
+              lista.map((c) => {
+                const pct = c.meta > 0 ? Math.min(100, (c.arrecadado / c.meta) * 100) : 0;
+                return (
+                  <div className="col-md-6" key={c.id}>
+                    <div className="card border-0 shadow-sm h-100">
+                      <div className="card-body">
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                          <h5 className="fw-semibold mb-0">{c.nome}</h5>
+                          <span className="badge bg-success">{c.status}</span>
+                        </div>
+                        <p className="text-muted small">{c.descricao}</p>
+                        <p className="small mb-2">Data: {c.data}</p>
+                        <div className="progress mb-2" style={{ height: 8 }}>
+                          <div
+                            className="progress-bar bg-success"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <p className="small mb-3">
+                          {formatBRL(c.arrecadado)} de {formatBRL(c.meta)} ({pct.toFixed(0)}%)
+                        </p>
+                        {!modoPublico && (
+                          <div className="d-flex flex-wrap gap-1">
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-success"
+                              onClick={() => abrirForm(c)}
+                            >
+                              Editar
+                            </button>
+                            {tab === 'ativas' && (
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-success"
+                                onClick={() => registrarDoacao(c.id)}
+                              >
+                                Doar
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger"
+                              onClick={() => setExcluirId(c.id)}
+                            >
+                              Excluir
+                            </button>
+                          </div>
                         )}
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-danger"
-                          onClick={() => setExcluirId(c.id)}
-                        >
-                          Excluir
-                        </button>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+                );
+              })
+            )}
+          </div>
+        </>
       )}
 
       <ConfirmModal

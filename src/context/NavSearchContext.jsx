@@ -12,7 +12,7 @@ export function NavSearchProvider({ children }) {
 
   function limparBusca() {
     setTermo('');
-    navigate('/');
+    navigate('/inicio');
   }
 
   const value = useMemo(

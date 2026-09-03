@@ -1,12 +1,14 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { ApiError } from '../api/client';
 import * as pessoasApi from '../api/pessoasApi';
+import { useAuth } from './AuthContext';
 
 const PessoasContext = createContext(null);
 
 export function PessoasProvider({ children }) {
+  const { autenticado } = useAuth();
   const [pessoas, setPessoas] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const refresh = useCallback(async () => {
@@ -30,8 +32,14 @@ export function PessoasProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (autenticado) {
+      refresh();
+      return;
+    }
+    setPessoas([]);
+    setError('');
+    setLoading(false);
+  }, [autenticado, refresh]);
 
   async function addPessoa(data) {
     const nova = await pessoasApi.createPessoa(data);

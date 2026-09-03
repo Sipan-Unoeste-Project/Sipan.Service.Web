@@ -28,6 +28,7 @@ export default function ApacSaudePage() {
   const [data, setData] = useState({ registros: [], vacinas: [] });
   const [animalId, setAnimalId] = useState(null);
   const [tab, setTab] = useState('atendimentos');
+  const [mostrarForm, setMostrarForm] = useState(false);
   const [form, setForm] = useState(emptyReg);
   const [msg, setMsg] = useTimedMessage(3000);
   const [erro, setErro] = useTimedMessage(6000);
@@ -70,6 +71,8 @@ export default function ApacSaudePage() {
     try {
       await saudeApi.createRegistro(animalId, form);
       setForm({ ...emptyReg, data: getDataAtualIso() });
+      setMostrarForm(false);
+      setTab('atendimentos');
       setMsg('Registro salvo.');
       await carregarSaude();
     } catch (err) {
@@ -81,7 +84,25 @@ export default function ApacSaudePage() {
   const vacinasAnimal = data.vacinas;
 
   return (
-    <PageShell title="Saúde animal" subtitle="Histórico veterinário por animal">
+    <PageShell
+      title="Saúde animal"
+      subtitle="Histórico veterinário por animal"
+      action={
+        !mostrarForm ? (
+          <button
+            type="button"
+            className="btn btn-success"
+            disabled={!animalId}
+            onClick={() => {
+              setForm({ ...emptyReg, data: getDataAtualIso() });
+              setMostrarForm(true);
+            }}
+          >
+            Novo Registro
+          </button>
+        ) : null
+      }
+    >
       <FeedbackAlert message={msg} />
       <FeedbackAlert message={erro} variant="danger" />
 
@@ -114,19 +135,10 @@ export default function ApacSaudePage() {
         </div>
       </div>
 
-      <ApacTabs
-        active={tab}
-        onChange={setTab}
-        tabs={[
-          { id: 'atendimentos', label: 'Atendimentos' },
-          { id: 'vacinas', label: 'Vacinas' },
-          { id: 'novo', label: '+ Registrar' },
-        ]}
-      />
-
-      {tab === 'novo' && (
+      {mostrarForm ? (
         <div className="card border-0 shadow-sm mb-4">
           <div className="card-body">
+            <h5 className="fw-semibold mb-3">Novo registro</h5>
             <form onSubmit={salvarRegistro}>
               <div className="row g-3">
                 <div className="col-md-3">
@@ -179,15 +191,33 @@ export default function ApacSaudePage() {
                   />
                 </div>
               </div>
-              <button type="submit" className="btn btn-success mt-3" disabled={!animalId}>
-                Salvar registro
-              </button>
+              <div className="d-flex gap-2 mt-3">
+                <button type="submit" className="btn btn-success" disabled={!animalId}>
+                  Salvar registro
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => setMostrarForm(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
             </form>
           </div>
         </div>
+      ) : (
+        <ApacTabs
+          active={tab}
+          onChange={setTab}
+          tabs={[
+            { id: 'atendimentos', label: 'Atendimentos' },
+            { id: 'vacinas', label: 'Vacinas' },
+          ]}
+        />
       )}
 
-      {tab === 'atendimentos' && (
+      {!mostrarForm && tab === 'atendimentos' && (
         <div className="list-group">
           {registrosAnimal.length === 0 ? (
             <p className="text-muted">
@@ -212,7 +242,7 @@ export default function ApacSaudePage() {
         </div>
       )}
 
-      {tab === 'vacinas' && (
+      {!mostrarForm && tab === 'vacinas' && (
         <div className="row g-3">
           {vacinasAnimal.length === 0 ? (
             <div className="col-12 text-muted">Nenhuma vacina cadastrada.</div>

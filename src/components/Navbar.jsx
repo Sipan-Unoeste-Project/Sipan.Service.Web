@@ -1,13 +1,17 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const linkClass = ({ isActive }) =>
   `nav-link px-2 px-lg-3 ${isActive ? 'active fw-semibold' : ''}`;
 
 export default function Navbar() {
+  const { autenticado } = useAuth();
+  const navigate = useNavigate();
+
   return (
     <nav className="navbar navbar-expand-lg navbar-light shadow-sm" style={{ backgroundColor: '#16744a' }}>
       <div className="container">
-        <NavLink className="navbar-brand fw-bold fs-5" to="/quem-somos">
+        <NavLink className="navbar-brand fw-bold fs-5" to="/">
           <img 
             src="/logo-apac.png" 
             alt="Logo APAC" 
@@ -67,8 +71,12 @@ export default function Navbar() {
             />
           </form>
 
-          <button className="btn" style={{ color: 'white', fontSize: '1.5rem' }} title="Login">
-            👤
+          <button
+            type="button"
+            className="btn btn-light btn-sm"
+            onClick={() => navigate(autenticado ? '/inicio' : '/login')}
+          >
+            {autenticado ? 'Área interna' : 'Entrar'}
           </button>
         </div>
       </div>

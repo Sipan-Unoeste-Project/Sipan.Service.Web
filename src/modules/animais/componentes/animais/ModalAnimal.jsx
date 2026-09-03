@@ -1,4 +1,4 @@
-export default function ModalAnimal({ animal, onFechar, onEditar, onRequestExcluir }) {
+export default function ModalAnimal({ animal, onFechar, onEditar, onRequestExcluir, podeGerenciar = true }) {
   if (!animal) return null;
 
   return (
@@ -90,18 +90,20 @@ export default function ModalAnimal({ animal, onFechar, onEditar, onRequestExclu
                 <p className="mb-0">{animal.sobre || 'Sem descrição'}</p>
               </div>
             </div>
-            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <button
-                type="button"
-                className="btn btn-outline-danger"
-                onClick={() => onRequestExcluir(animal)}
-              >
-                Excluir
-              </button>
-              <button type="button" className="btn btn-success" onClick={() => onEditar(animal)}>
-                Editar
-              </button>
-            </div>
+            {podeGerenciar && (
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <button
+                  type="button"
+                  className="btn btn-outline-danger"
+                  onClick={() => onRequestExcluir(animal)}
+                >
+                  Excluir
+                </button>
+                <button type="button" className="btn btn-success" onClick={() => onEditar(animal)}>
+                  Editar
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

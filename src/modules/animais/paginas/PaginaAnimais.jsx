@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
 import PageShell from '../../../components/PageShell';
 import ConfirmModal from '../../../components/ConfirmModal';
 import FeedbackAlert from '../../../components/FeedbackAlert';
@@ -10,6 +12,9 @@ import ModalAnimal from '../componentes/animais/ModalAnimal';
 import { listarAnimais, excluirAnimal } from '../utils/storageAnimais';
 
 export default function PaginaAnimais() {
+  const location = useLocation();
+  const { autenticado } = useAuth();
+  const modoPublico = location.pathname.startsWith('/publico') || !autenticado;
   const [animais, setAnimais] = useState([]);
   const [animalParaEditar, setAnimalParaEditar] = useState(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -70,18 +75,24 @@ export default function PaginaAnimais() {
   return (
     <PageShell
       title="Animais"
-      subtitle="Cadastro e acompanhamento dos animais do abrigo"
+      subtitle={
+        modoPublico
+          ? 'Conheça os animais disponíveis para adoção'
+          : 'Cadastro e acompanhamento dos animais do abrigo'
+      }
       action={
-        <button
-          type="button"
-          className="btn btn-success"
-          onClick={() => {
-            setAnimalParaEditar(null);
-            setMostrarFormulario(true);
-          }}
-        >
-          + Cadastrar Animal
-        </button>
+        modoPublico ? null : (
+          <button
+            type="button"
+            className="btn btn-success"
+            onClick={() => {
+              setAnimalParaEditar(null);
+              setMostrarFormulario(true);
+            }}
+          >
+            + Cadastrar Animal
+          </button>
+        )
       }
     >
       <FeedbackAlert message={erro} variant="danger" />
@@ -148,6 +159,7 @@ export default function PaginaAnimais() {
 
           <ModalAnimal
             animal={animalSelecionado}
+            podeGerenciar={!modoPublico}
             onFechar={() => setAnimalSelecionado(null)}
             onEditar={(animal) => {
               setAnimalSelecionado(null);

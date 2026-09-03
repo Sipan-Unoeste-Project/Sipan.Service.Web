@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { ApiError } from '../../../api/client';
+import { useAuth } from '../../../context/AuthContext';
 import * as doacoesApi from '../../../api/doacoesApi';
 import FormSelect from '../../../components/FormSelect';
 import PageShell from '../../../components/PageShell';
@@ -23,6 +25,9 @@ const emptyDinheiro = {
 const emptyItem = { produto: 'Ração para cães', quantidade: '1', unidade: 'Unidade(s)' };
 
 export default function ApacDoacoesPage() {
+  const location = useLocation();
+  const { autenticado } = useAuth();
+  const modoPublico = location.pathname.startsWith('/publico') || !autenticado;
   const [doacoes, setDoacoes] = useState([]);
   const [tipo, setTipo] = useState('dinheiro');
   const [formD, setFormD] = useState(emptyDinheiro);
@@ -38,6 +43,10 @@ export default function ApacDoacoesPage() {
   const [erro, setErro] = useTimedMessage(6000);
 
   const carregar = useCallback(async () => {
+    if (modoPublico) {
+      setDoacoes([]);
+      return;
+    }
     try {
       const lista = await doacoesApi.listDoacoes();
       setDoacoes(lista.map(doacoesApi.mapDoacaoUi));
@@ -48,7 +57,7 @@ export default function ApacDoacoesPage() {
           : 'Não foi possível carregar doações. Verifique a API e o schema APAC.'
       );
     }
-  }, [setErro]);
+  }, [modoPublico, setErro]);
 
   useEffect(() => {
     carregar();

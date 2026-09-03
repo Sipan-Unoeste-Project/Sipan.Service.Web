@@ -30,7 +30,8 @@ const emptySaida = {
 
 export default function ApacFinanceiroPage() {
   const [data, setData] = useState({ entradas: [], saidas: [] });
-  const [tab, setTab] = useState('entrada');
+  const [filtro, setFiltro] = useState('todos');
+  const [formulario, setFormulario] = useState(null);
   const [formE, setFormE] = useState(emptyEntrada);
   const [formS, setFormS] = useState(emptySaida);
   const [msg, setMsg] = useTimedMessage(3000);
@@ -57,6 +58,20 @@ export default function ApacFinanceiroPage() {
   const totalSaida = data.saidas.reduce((s, e) => s + e.valor, 0);
   const saldo = totalEntrada - totalSaida;
 
+  function abrirEntrada() {
+    setFormE({ ...emptyEntrada, data: getDataAtualIso() });
+    setFormulario('entrada');
+  }
+
+  function abrirSaida() {
+    setFormS({ ...emptySaida, data: getDataAtualIso() });
+    setFormulario('saida');
+  }
+
+  function fecharFormulario() {
+    setFormulario(null);
+  }
+
   async function registrarEntrada(e) {
     e.preventDefault();
     try {
@@ -65,8 +80,9 @@ export default function ApacFinanceiroPage() {
         valor: parseValor(formE.valor),
       });
       setFormE({ ...emptyEntrada, data: getDataAtualIso() });
+      setFormulario(null);
+      setFiltro('todos');
       setMsg('Entrada registrada.');
-      setTab('historico');
       await carregar();
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : 'Erro ao registrar entrada.');
@@ -81,8 +97,9 @@ export default function ApacFinanceiroPage() {
         valor: parseValor(formS.valor),
       });
       setFormS({ ...emptySaida, data: getDataAtualIso() });
+      setFormulario(null);
+      setFiltro('todos');
       setMsg('Saída registrada.');
-      setTab('historico');
       await carregar();
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : 'Erro ao registrar saída.');
@@ -92,10 +109,30 @@ export default function ApacFinanceiroPage() {
   const historico = [
     ...data.entradas.map((x) => ({ ...x, kind: 'entrada' })),
     ...data.saidas.map((x) => ({ ...x, kind: 'saida' })),
-  ].sort((a, b) => b.id - a.id);
+  ]
+    .filter((l) => filtro === 'todos' || l.kind === filtro)
+    .sort((a, b) => {
+      if (a.data !== b.data) return b.data.localeCompare(a.data);
+      return b.id - a.id;
+    });
 
   return (
-    <PageShell title="Financeiro" subtitle="Controle de entradas e saídas de caixa">
+    <PageShell
+      title="Financeiro"
+      subtitle="Controle de entradas e saídas de caixa"
+      action={
+        !formulario ? (
+          <div className="d-flex flex-wrap gap-2">
+            <button type="button" className="btn btn-success btn-no-hover" onClick={abrirEntrada}>
+              Nova Entrada
+            </button>
+            <button type="button" className="btn btn-danger btn-no-hover" onClick={abrirSaida}>
+              Nova Saída
+            </button>
+          </div>
+        ) : null
+      }
+    >
       <FeedbackAlert message={msg} />
       <FeedbackAlert message={erro} variant="danger" />
 
@@ -112,19 +149,10 @@ export default function ApacFinanceiroPage() {
         ]}
       />
 
-      <ApacTabs
-        active={tab}
-        onChange={setTab}
-        tabs={[
-          { id: 'entrada', label: 'Registrar entrada' },
-          { id: 'saida', label: 'Registrar saída' },
-          { id: 'historico', label: 'Histórico' },
-        ]}
-      />
-
-      {tab === 'entrada' && (
+      {formulario === 'entrada' && (
         <div className="card border-0 shadow-sm mb-4">
           <div className="card-body">
+            <h5 className="fw-semibold mb-3">Nova entrada</h5>
             <form onSubmit={registrarEntrada}>
               <div className="row g-3">
                 <div className="col-md-4">
@@ -151,6 +179,7 @@ export default function ApacFinanceiroPage() {
                 <div className="col-md-4">
                   <label className="form-label">Data</label>
                   <input
+                    type="date"
                     className="form-control"
                     value={formE.data}
                     onChange={(e) => setFormE({ ...formE, data: e.target.value })}
@@ -182,17 +211,23 @@ export default function ApacFinanceiroPage() {
                   />
                 </div>
               </div>
-              <button type="submit" className="btn btn-success mt-3">
-                Registrar entrada
-              </button>
+              <div className="d-flex gap-2 mt-3">
+                <button type="submit" className="btn btn-success">
+                  Salvar entrada
+                </button>
+                <button type="button" className="btn btn-outline-secondary" onClick={fecharFormulario}>
+                  Cancelar
+                </button>
+              </div>
             </form>
           </div>
         </div>
       )}
 
-      {tab === 'saida' && (
+      {formulario === 'saida' && (
         <div className="card border-0 shadow-sm mb-4">
           <div className="card-body">
+            <h5 className="fw-semibold mb-3">Nova saída</h5>
             <form onSubmit={registrarSaida}>
               <div className="row g-3">
                 <div className="col-md-4">
@@ -253,43 +288,60 @@ export default function ApacFinanceiroPage() {
                   />
                 </div>
               </div>
-              <button type="submit" className="btn btn-danger mt-3">
-                Registrar saída
-              </button>
+              <div className="d-flex gap-2 mt-3">
+                <button type="submit" className="btn btn-danger">
+                  Salvar saída
+                </button>
+                <button type="button" className="btn btn-outline-secondary" onClick={fecharFormulario}>
+                  Cancelar
+                </button>
+              </div>
             </form>
           </div>
         </div>
       )}
 
-      {tab === 'historico' && (
-        <div className="list-group">
-          {historico.length === 0 ? (
-            <p className="text-muted">Nenhum lançamento.</p>
-          ) : (
-            historico.map((l) => (
-              <div
-                key={`${l.kind}-${l.id}`}
-                className="list-group-item d-flex justify-content-between align-items-center"
-              >
-                <div>
-                  <strong>
-                    {l.kind === 'entrada'
-                      ? l.origem
-                      : `${l.tipo} — ${l.fornecedor || '—'}`}
-                  </strong>
-                  <div className="small text-muted">
-                    {l.data}
-                    {l.kind === 'entrada' && l.responsavel && ` · ${l.responsavel}`}
-                    {l.kind === 'saida' && l.animal && ` · ${l.animal}`}
+      {!formulario && (
+        <>
+          <ApacTabs
+            active={filtro}
+            onChange={setFiltro}
+            tabs={[
+              { id: 'todos', label: 'Histórico' },
+              { id: 'entrada', label: 'Entradas' },
+              { id: 'saida', label: 'Saídas' },
+            ]}
+          />
+
+          <div className="list-group">
+            {historico.length === 0 ? (
+              <p className="text-muted mb-0">Nenhum lançamento.</p>
+            ) : (
+              historico.map((l) => (
+                <div
+                  key={`${l.kind}-${l.id}`}
+                  className="list-group-item d-flex justify-content-between align-items-center"
+                >
+                  <div>
+                    <strong>
+                      {l.kind === 'entrada'
+                        ? l.origem
+                        : `${l.tipo} — ${l.fornecedor || '—'}`}
+                    </strong>
+                    <div className="small text-muted">
+                      {l.data}
+                      {l.kind === 'entrada' && l.responsavel && ` · ${l.responsavel}`}
+                      {l.kind === 'saida' && l.animal && ` · ${l.animal}`}
+                    </div>
                   </div>
+                  <span className={l.kind === 'entrada' ? 'text-success fw-bold' : 'text-danger fw-bold'}>
+                    {l.kind === 'entrada' ? '+' : '−'} {formatBRL(l.valor)}
+                  </span>
                 </div>
-                <span className={l.kind === 'entrada' ? 'text-success fw-bold' : 'text-danger fw-bold'}>
-                  {l.kind === 'entrada' ? '+' : '−'} {formatBRL(l.valor)}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
+              ))
+            )}
+          </div>
+        </>
       )}
     </PageShell>
   );
