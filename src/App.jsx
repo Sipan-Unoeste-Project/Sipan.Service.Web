@@ -9,6 +9,8 @@ import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
+import EsqueciSenhaPage from './pages/EsqueciSenhaPage';
+import TrocarSenhaPage from './pages/TrocarSenhaPage';
 import QuemSomos from './pages/QuemSomos';
 import Contato from './pages/Contato';
 import PessoasPage from './pages/PessoasPage';
@@ -35,7 +37,12 @@ import NovaSolicitacaoPage from './modules/sipan/pages/NovaSolicitacaoPage';
 import EditarSolicitacaoPage from './modules/sipan/pages/EditarSolicitacaoPage';
 
 function isPublicPath(pathname) {
-  return pathname === '/' || pathname === '/login' || pathname.startsWith('/publico');
+  return (
+    pathname === '/' ||
+    pathname === '/login' ||
+    pathname === '/esqueci-senha' ||
+    pathname.startsWith('/publico')
+  );
 }
 
 function AdminOutlet() {
@@ -56,6 +63,7 @@ function AppContent() {
     <Routes>
       <Route path="/" element={<QuemSomos />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/esqueci-senha" element={<EsqueciSenhaPage />} />
       <Route path="/publico/contato" element={<Contato />} />
       <Route path="/publico/animais" element={<PaginaAnimais />} />
       <Route path="/publico/doacoes" element={<ApacDoacoesPage />} />
@@ -63,6 +71,7 @@ function AppContent() {
 
       <Route element={<AdminOutlet />}>
         <Route path="/inicio" element={<HomePage />} />
+        <Route path="/trocar-senha" element={<TrocarSenhaPage />} />
         <Route path="/pessoas" element={<PessoasPage />} />
         <Route path="/pessoas/nova" element={<NovaPessoaPage />} />
         <Route path="/pessoas/:id/editar" element={<EditarPessoaPage />} />

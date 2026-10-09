@@ -1,14 +1,20 @@
 import { createContext, useContext, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from './AuthContext';
 import { filterNavOptions } from '../data/navOptions';
+import { filtrarNavPorPermissao } from '../utils/permissoes';
 
 const NavSearchContext = createContext(null);
 
 export function NavSearchProvider({ children }) {
   const navigate = useNavigate();
+  const { usuario } = useAuth();
   const [termo, setTermo] = useState('');
 
-  const opcoesFiltradas = useMemo(() => filterNavOptions(termo), [termo]);
+  const opcoesFiltradas = useMemo(
+    () => filtrarNavPorPermissao(filterNavOptions(termo), usuario?.permissao),
+    [termo, usuario?.permissao]
+  );
 
   function limparBusca() {
     setTermo('');

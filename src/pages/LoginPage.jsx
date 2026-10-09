@@ -3,8 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { getAuthStatus } from '../api/authApi';
 import { useAuth } from '../context/AuthContext';
-
-const SENHA_FORTE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+import { senhaForteValida, SENHA_FORTE_MSG } from '../utils/senha';
 
 function IconeOlho({ aberto }) {
   if (aberto) {
@@ -85,8 +84,8 @@ export default function LoginPage() {
   async function handlePrimeiroAcesso(event) {
     event.preventDefault();
     setErro('');
-    if (!SENHA_FORTE.test(primeiro.senha)) {
-      setErro('A senha precisa ter 8 caracteres, com maiúscula, minúscula, número e especial.');
+    if (!senhaForteValida(primeiro.senha)) {
+      setErro(SENHA_FORTE_MSG);
       return;
     }
     setEnviando(true);
@@ -234,9 +233,7 @@ export default function LoginPage() {
                         <IconeOlho aberto={mostrarSenha} />
                       </button>
                     </div>
-                    <small className="text-muted">
-                      Mínimo 8 caracteres: maiúscula, minúscula, número e especial.
-                    </small>
+                    <small className="text-muted">{SENHA_FORTE_MSG}</small>
                   </div>
                   <button type="submit" className="btn btn-success w-100" disabled={enviando}>
                     {enviando ? 'Criando...' : 'Criar administrador'}
@@ -244,7 +241,15 @@ export default function LoginPage() {
                 </form>
               )}
 
-              <div className="text-center mt-3">
+              {configurado ? (
+                <div className="text-center mt-3">
+                  <Link to="/esqueci-senha" className="small text-decoration-none">
+                    Esqueci minha senha
+                  </Link>
+                </div>
+              ) : null}
+
+              <div className="text-center mt-2">
                 <Link to="/" className="small text-decoration-none">
                   Voltar ao site
                 </Link>

@@ -72,6 +72,15 @@ export function AuthProvider({ children }) {
           setUsuario(null);
         }
       },
+      async atualizarSessao() {
+        if (!getAuthToken()) {
+          setUsuario(null);
+          return null;
+        }
+        const me = await authApi.getMe();
+        setUsuario(me);
+        return me;
+      },
     }),
     [usuario, carregando]
   );

@@ -36,3 +36,19 @@ export function maskCEP(value) {
   if (digits.length > 5) return digits.replace(/(\d{5})(\d{1,3})/, '$1-$2');
   return digits;
 }
+
+/**
+ * Aplica máscara de data: dd/mm/aaaa
+ */
+export function maskDate(value) {
+  const digits = String(value ?? '')
+    .replace(/\D/g, '')
+    .slice(0, 8);
+  if (digits.length > 4) {
+    return digits.replace(/(\d{2})(\d{2})(\d{1,4})/, '$1/$2/$3');
+  }
+  if (digits.length > 2) {
+    return digits.replace(/(\d{2})(\d{1,2})/, '$1/$2');
+  }
+  return digits;
+}

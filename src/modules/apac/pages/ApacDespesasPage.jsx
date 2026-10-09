@@ -6,6 +6,7 @@ import FormSelect from '../../../components/FormSelect';
 import PageShell from '../../../components/PageShell';
 import ApacTabs from '../components/ApacTabs';
 import ConfirmModal from '../../../components/ConfirmModal';
+import ActionIconButtons from '../../../components/ActionIconButtons';
 import FeedbackAlert from '../../../components/FeedbackAlert';
 import { useTimedMessage } from '../../../hooks/useTimedMessage';
 import { parseValor, formatBRL } from '../storage/apacStorage';
@@ -260,13 +261,7 @@ export default function ApacDespesasPage() {
                     <td>{d.animal || '—'}</td>
                     <td className="text-danger fw-semibold">{formatBRL(d.valor)}</td>
                     <td className="text-end">
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-danger"
-                        onClick={() => setExcluirId(d.id)}
-                      >
-                        Excluir
-                      </button>
+                      <ActionIconButtons onDelete={() => setExcluirId(d.id)} />
                     </td>
                   </tr>
                 ))
