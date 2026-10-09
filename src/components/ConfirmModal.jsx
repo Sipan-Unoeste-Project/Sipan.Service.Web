@@ -1,22 +1,11 @@
-/**
- * Modal de confirmação (Bootstrap, controlado por `show`).
- *
- * @param {{
- *   show: boolean,
- *   title?: string,
- *   message?: React.ReactNode,
- *   nome?: string,
- *   confirmLabel?: string,
- *   onConfirm: Function,
- *   onCancel: Function,
- * }} props
- */
 export default function ConfirmModal({
   show,
   title = 'Confirmar exclusão',
   message,
   nome,
   confirmLabel = 'Excluir',
+  confirmVariant = 'danger',
+  confirmDisabled = false,
   onConfirm,
   onCancel,
 }) {
@@ -74,13 +63,18 @@ export default function ConfirmModal({
               />
             </div>
             <div className="modal-body">
-              <p className="mb-0">{body}</p>
+              {typeof body === 'string' ? <p className="mb-0">{body}</p> : body}
             </div>
             <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
               <button type="button" className="btn btn-outline-secondary" onClick={onCancel}>
                 Cancelar
               </button>
-              <button type="button" className="btn btn-danger" onClick={onConfirm}>
+              <button
+                type="button"
+                className={`btn btn-${confirmVariant}`}
+                disabled={confirmDisabled}
+                onClick={onConfirm}
+              >
                 {confirmLabel}
               </button>
             </div>
