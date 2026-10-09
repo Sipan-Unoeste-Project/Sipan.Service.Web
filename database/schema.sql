@@ -81,7 +81,9 @@ CREATE TABLE usuarios (
   login       VARCHAR(60)     NOT NULL,
   email       VARCHAR(150)    NOT NULL,
   senha_hash  VARCHAR(255)    NOT NULL COMMENT 'Hash bcrypt/argon2 – nunca texto puro',
-  permissao   ENUM('Administrador', 'Funcionário', 'Veterinário', 'Voluntário') NOT NULL,
+  reset_token VARCHAR(64)     NULL COMMENT 'Token temporário de recuperação de senha',
+  reset_expira DATETIME       NULL,
+  permissao   ENUM('Administrador', 'Financeiro', 'Veterinário', 'Voluntário') NOT NULL,
   status      ENUM('Ativo', 'Inativo') NOT NULL DEFAULT 'Ativo',
   created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -148,15 +150,18 @@ CREATE TABLE apac_campanhas (
   id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   nome         VARCHAR(200)    NOT NULL,
   descricao    TEXT            NULL,
-  data_evento  DATE            NOT NULL,
-  meta         DECIMAL(12, 2)  NOT NULL DEFAULT 0.00,
+  data_inicio  DATE            NOT NULL,
+  data_fim     DATE            NOT NULL,
+  data_evento  DATE            NOT NULL COMMENT 'Compatibilidade: espelha data_inicio',
+  meta         DECIMAL(12, 2)  NOT NULL DEFAULT 0.00 COMMENT 'Estimativa de valor (pode ser ultrapassada)',
   arrecadado   DECIMAL(12, 2)  NOT NULL DEFAULT 0.00,
-  status       ENUM('planejada', 'ativa', 'concluida', 'cancelada') NOT NULL DEFAULT 'planejada',
+  status       ENUM('planejada', 'ativa', 'concluida', 'cancelada') NOT NULL DEFAULT 'ativa',
   created_at   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at   TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_campanhas_status (status),
-  KEY idx_campanhas_data (data_evento)
+  KEY idx_campanhas_data (data_evento),
+  KEY idx_campanhas_periodo (data_inicio, data_fim)
 ) ENGINE=InnoDB
   COMMENT='Campanhas de arrecadação e eventos';
 
@@ -216,6 +221,8 @@ CREATE TABLE apac_estoque (
   local       VARCHAR(120)    NULL,
   limite_baixo_estoque INT UNSIGNED NOT NULL DEFAULT 5,
   status      ENUM('normal', 'baixo') NOT NULL DEFAULT 'normal',
+  atualizado_por_id   BIGINT UNSIGNED NULL,
+  atualizado_por_nome VARCHAR(150)    NULL,
   created_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
@@ -224,6 +231,27 @@ CREATE TABLE apac_estoque (
   KEY idx_estoque_status (status)
 ) ENGINE=InnoDB
   COMMENT='Itens de estoque do abrigo';
+
+CREATE TABLE apac_estoque_movimentos (
+  id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  estoque_id         BIGINT UNSIGNED NULL,
+  item_nome          VARCHAR(200)    NOT NULL,
+  acao               ENUM('criacao', 'alteracao', 'ajuste', 'exclusao') NOT NULL,
+  quantidade_antes   INT             NULL,
+  quantidade_depois  INT             NULL,
+  usuario_id         BIGINT UNSIGNED NULL,
+  usuario_nome       VARCHAR(150)    NULL,
+  detalhe            VARCHAR(255)    NULL,
+  created_at         TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_estoque_mov_estoque (estoque_id),
+  KEY idx_estoque_mov_created (created_at),
+  CONSTRAINT fk_estoque_mov_item
+    FOREIGN KEY (estoque_id) REFERENCES apac_estoque (id)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
+) ENGINE=InnoDB
+  COMMENT='Histórico de alterações do estoque';
 
 -- =============================================================================
 -- APAC – FINANCEIRO

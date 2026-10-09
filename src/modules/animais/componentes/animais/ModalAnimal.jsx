@@ -1,3 +1,5 @@
+import ActionIconButtons from '../../../../components/ActionIconButtons';
+
 export default function ModalAnimal({ animal, onFechar, onEditar, onRequestExcluir, podeGerenciar = true }) {
   if (!animal) return null;
 
@@ -91,17 +93,11 @@ export default function ModalAnimal({ animal, onFechar, onEditar, onRequestExclu
               </div>
             </div>
             {podeGerenciar && (
-              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <button
-                  type="button"
-                  className="btn btn-outline-danger"
-                  onClick={() => onRequestExcluir(animal)}
-                >
-                  Excluir
-                </button>
-                <button type="button" className="btn btn-success" onClick={() => onEditar(animal)}>
-                  Editar
-                </button>
+              <div className="modal-footer justify-content-end">
+                <ActionIconButtons
+                  onEdit={() => onEditar(animal)}
+                  onDelete={() => onRequestExcluir(animal)}
+                />
               </div>
             )}
           </div>

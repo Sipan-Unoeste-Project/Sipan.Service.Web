@@ -190,6 +190,29 @@ body {
   box-shadow: none;
 }
 
+.app-shell .navbar .btn-outline-light {
+  --bs-btn-color: #fff;
+  --bs-btn-border-color: #fff;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: transparent;
+  --bs-btn-hover-border-color: #fff;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: transparent;
+  --bs-btn-active-border-color: #fff;
+  color: #fff;
+  background-color: transparent;
+  border-color: #fff;
+}
+
+.app-shell .navbar .btn-outline-light:hover,
+.app-shell .navbar .btn-outline-light:focus,
+.app-shell .navbar .btn-outline-light:active {
+  color: #fff;
+  background-color: transparent;
+  border-color: #fff;
+  box-shadow: none;
+}
+
 .app-shell .navbar .nav-item {
   background: transparent !important;
   padding: 0;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ConfirmModal from '../../../components/ConfirmModal';
+import ActionIconButtons from '../../../components/ActionIconButtons';
 
 const STATUS_FILTRO = ['todos', 'Pendente', 'Em análise', 'Aprovada', 'Recusada', 'Concluída'];
 
@@ -94,22 +95,10 @@ export default function AdocaoTable({ solicitacoes, onDelete }) {
                   <td className="text-muted small">{formatData(s.dataSolicitacao)}</td>
                   <td className="text-muted">{s.status}</td>
                   <td>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-secondary me-1"
-                      title="Editar"
-                      onClick={() => navigate(`/adocoes/${s.id}/editar`)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-outline-danger"
-                      title="Excluir"
-                      onClick={() => setConfirmId(s.id)}
-                    >
-                      Excluir
-                    </button>
+                    <ActionIconButtons
+                      onEdit={() => navigate(`/adocoes/${s.id}/editar`)}
+                      onDelete={() => setConfirmId(s.id)}
+                    />
                   </td>
                 </tr>
               ))}

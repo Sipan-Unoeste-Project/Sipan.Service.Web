@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNavSearch } from '../context/NavSearchContext';
+import { normalizarPermissao } from '../utils/permissoes';
 
 export default function AppNavbar() {
   const navigate = useNavigate();
@@ -117,7 +118,16 @@ export default function AppNavbar() {
         <div className="d-flex align-items-center gap-2">
           <span className="text-white small d-none d-md-inline">
             {usuario?.nome}
+            {usuario?.permissao ? ` · ${normalizarPermissao(usuario.permissao)}` : ''}
           </span>
+          <button
+            type="button"
+            className="btn btn-outline-light btn-sm"
+            title="Trocar senha"
+            onClick={() => navigate('/trocar-senha')}
+          >
+            Trocar senha
+          </button>
           <button
             type="button"
             className="btn btn-light btn-sm"
