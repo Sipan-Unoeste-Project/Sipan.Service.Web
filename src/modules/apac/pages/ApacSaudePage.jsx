@@ -5,6 +5,7 @@ import { getDataAtualIso } from '../../../utils/dates';
 import FormSelect from '../../../components/FormSelect';
 import PageShell from '../../../components/PageShell';
 import ApacTabs from '../components/ApacTabs';
+import ConfirmModal from '../../../components/ConfirmModal';
 import FeedbackAlert from '../../../components/FeedbackAlert';
 import { useTimedMessage } from '../../../hooks/useTimedMessage';
 import { listarAnimais } from '../../animais/utils/storageAnimais';
@@ -21,26 +22,47 @@ const emptyReg = {
   titulo: '',
   descricao: '',
   data: getDataAtualIso(),
+  proxima: '',
   vet: '',
 };
+
+function getStatusVacina(dataProxima) {
+  if (!dataProxima) return { label: 'Em dia', badge: 'bg-success' };
+
+  const hoje = new Date();
+  const hojeIso = [
+    hoje.getFullYear(),
+    String(hoje.getMonth() + 1).padStart(2, '0'),
+    String(hoje.getDate()).padStart(2, '0'),
+  ].join('-');
+  const diasAteVencimento =
+    (Date.parse(`${dataProxima}T00:00:00`) - Date.parse(`${hojeIso}T00:00:00`)) /
+    (1000 * 60 * 60 * 24);
+
+  if (diasAteVencimento < 0) return { label: 'Atrasada', badge: 'bg-danger' };
+  if (diasAteVencimento <= 30) {
+    return { label: 'Vence em breve', badge: 'bg-warning text-dark' };
+  }
+  return { label: 'Em dia', badge: 'bg-success' };
+}
 
 export default function ApacSaudePage() {
   const [data, setData] = useState({ registros: [], vacinas: [] });
   const [animalId, setAnimalId] = useState(null);
   const [tab, setTab] = useState('atendimentos');
   const [mostrarForm, setMostrarForm] = useState(false);
+  const [editando, setEditando] = useState(null);
   const [form, setForm] = useState(emptyReg);
   const [msg, setMsg] = useTimedMessage(3000);
   const [erro, setErro] = useTimedMessage(6000);
   const [animais, setAnimais] = useState([]);
+  const [excluir, setExcluir] = useState(null);
 
   useEffect(() => {
     listarAnimais()
       .then((lista) => {
         setAnimais(lista);
-        if (lista.length > 0) {
-          setAnimalId((atual) => atual ?? lista[0].id);
-        }
+        if (lista.length > 0) setAnimalId((atual) => atual ?? lista[0].id);
       })
       .catch(() => setAnimais([]));
   }, []);
@@ -65,18 +87,62 @@ export default function ApacSaudePage() {
 
   const animalSelecionado = animais.find((a) => a.id === animalId);
 
-  async function salvarRegistro(e) {
-    e.preventDefault();
-    if (!animalId) return;
-    try {
-      await saudeApi.createRegistro(animalId, form);
+  function abrirForm(registro, tipo = 'registro') {
+    if (registro) {
+      setEditando({ id: registro.id, tipo });
+      setForm({
+        tipo: tipo === 'vacina' ? 'vacina' : registro.tipo,
+        titulo: tipo === 'vacina' ? registro.nome : registro.titulo,
+        descricao: registro.descricao || '',
+        data: tipo === 'vacina' ? registro.aplicadaIso : registro.dataIso,
+        proxima: tipo === 'vacina' ? registro.proximaIso || '' : '',
+        vet: registro.vet || '',
+      });
+    } else {
+      setEditando(null);
       setForm({ ...emptyReg, data: getDataAtualIso() });
-      setMostrarForm(false);
-      setTab('atendimentos');
-      setMsg('Registro salvo.');
+    }
+    setMostrarForm(true);
+  }
+
+  function fecharForm() {
+    setMostrarForm(false);
+    setEditando(null);
+    setForm({ ...emptyReg, data: getDataAtualIso() });
+  }
+
+  async function salvarRegistro(event) {
+    event.preventDefault();
+    if (!animalId) return;
+    if (form.tipo === 'vacina' && form.proxima && form.proxima < form.data) {
+      setErro('A data da próxima vacina não pode ser anterior à data da vacina.');
+      return;
+    }
+    try {
+      if (editando) await saudeApi.updateRegistro(editando.id, animalId, form);
+      else await saudeApi.createRegistro(animalId, form);
+
+      const tabAposSalvar = form.tipo === 'vacina' ? 'vacinas' : 'atendimentos';
+      const mensagem = editando ? 'Registro atualizado.' : 'Registro salvo.';
+      fecharForm();
+      setTab(tabAposSalvar);
+      setMsg(mensagem);
       await carregarSaude();
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : 'Erro ao salvar registro.');
+    }
+  }
+
+  async function confirmarExclusao() {
+    if (!excluir) return;
+    try {
+      await saudeApi.deleteRegistro(excluir.id, excluir.tipo);
+      setExcluir(null);
+      setMsg(excluir.tipo === 'vacina' ? 'Vacina excluída.' : 'Registro excluído.');
+      await carregarSaude();
+    } catch (err) {
+      setErro(err instanceof ApiError ? err.message : 'Erro ao excluir registro.');
+      setExcluir(null);
     }
   }
 
@@ -93,10 +159,7 @@ export default function ApacSaudePage() {
             type="button"
             className="btn btn-success"
             disabled={!animalId}
-            onClick={() => {
-              setForm({ ...emptyReg, data: getDataAtualIso() });
-              setMostrarForm(true);
-            }}
+            onClick={() => abrirForm()}
           >
             Novo Registro
           </button>
@@ -138,13 +201,14 @@ export default function ApacSaudePage() {
       {mostrarForm ? (
         <div className="card border-0 shadow-sm mb-4">
           <div className="card-body">
-            <h5 className="fw-semibold mb-3">Novo registro</h5>
+            <h5 className="fw-semibold mb-3">{editando ? 'Editar registro' : 'Novo registro'}</h5>
             <form onSubmit={salvarRegistro}>
               <div className="row g-3">
                 <div className="col-md-3">
                   <label className="form-label">Tipo</label>
                   <FormSelect
                     value={form.tipo}
+                    disabled={!!editando}
                     onChange={(e) => setForm({ ...form, tipo: e.target.value })}
                   >
                     {TIPOS.map((t) => (
@@ -173,6 +237,18 @@ export default function ApacSaudePage() {
                     required
                   />
                 </div>
+                {form.tipo === 'vacina' && (
+                  <div className="col-md-4">
+                    <label className="form-label">Próxima</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      min={form.data}
+                      value={form.proxima}
+                      onChange={(e) => setForm({ ...form, proxima: e.target.value })}
+                    />
+                  </div>
+                )}
                 <div className="col-12">
                   <label className="form-label">Descrição</label>
                   <textarea
@@ -195,11 +271,7 @@ export default function ApacSaudePage() {
                 <button type="submit" className="btn btn-success" disabled={!animalId}>
                   Salvar registro
                 </button>
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={() => setMostrarForm(false)}
-                >
+                <button type="button" className="btn btn-outline-secondary" onClick={fecharForm}>
                   Cancelar
                 </button>
               </div>
@@ -220,9 +292,7 @@ export default function ApacSaudePage() {
       {!mostrarForm && tab === 'atendimentos' && (
         <div className="list-group">
           {registrosAnimal.length === 0 ? (
-            <p className="text-muted">
-              Nenhum atendimento para {animalSelecionado?.nome ?? 'este animal'}.
-            </p>
+            <p className="text-muted">Nenhum atendimento para {animalSelecionado?.nome ?? 'este animal'}.</p>
           ) : (
             registrosAnimal.map((r) => {
               const tipo = TIPOS.find((t) => t.value === r.tipo) || TIPOS[0];
@@ -235,6 +305,18 @@ export default function ApacSaudePage() {
                   <h6 className="mb-1">{r.titulo}</h6>
                   <p className="mb-1 small">{r.descricao}</p>
                   {r.vet && <p className="mb-0 small text-muted">{r.vet}</p>}
+                  <div className="d-flex gap-2 mt-2">
+                    <button type="button" className="btn btn-sm btn-outline-success" onClick={() => abrirForm(r)}>
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => setExcluir({ id: r.id, tipo: 'registro', nome: r.titulo })}
+                    >
+                      Excluir
+                    </button>
+                  </div>
                 </div>
               );
             })
@@ -247,25 +329,43 @@ export default function ApacSaudePage() {
           {vacinasAnimal.length === 0 ? (
             <div className="col-12 text-muted">Nenhuma vacina cadastrada.</div>
           ) : (
-            vacinasAnimal.map((v) => (
-              <div className="col-md-6" key={v.id}>
-                <div className="card border-0 shadow-sm h-100">
-                  <div className="card-body">
-                    <h6 className="fw-semibold">{v.nome}</h6>
-                    <p className="small mb-1">Aplicada: {v.aplicada}</p>
-                    <p className="small mb-2">Próxima: {v.proxima || '—'}</p>
-                    <span
-                      className={`badge ${v.status === 'em_dia' ? 'bg-success' : 'bg-warning text-dark'}`}
-                    >
-                      {v.status === 'em_dia' ? 'Em dia' : v.status}
-                    </span>
+            vacinasAnimal.map((v) => {
+              const status = getStatusVacina(v.proximaIso);
+              return (
+                <div className="col-md-6" key={v.id}>
+                  <div className="card border-0 shadow-sm h-100">
+                    <div className="card-body">
+                      <h6 className="fw-semibold">{v.nome}</h6>
+                      <p className="small mb-1">Aplicada: {v.aplicada}</p>
+                      <p className="small mb-2">Próxima: {v.proxima || '—'}</p>
+                      <span className={`badge ${status.badge}`}>{status.label}</span>
+                      <div className="d-flex gap-2 mt-2">
+                        <button type="button" className="btn btn-sm btn-outline-success" onClick={() => abrirForm(v, 'vacina')}>
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => setExcluir({ id: v.id, tipo: 'vacina', nome: v.nome })}
+                        >
+                          Excluir
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
+
+      <ConfirmModal
+        show={!!excluir}
+        nome={excluir?.nome}
+        onConfirm={confirmarExclusao}
+        onCancel={() => setExcluir(null)}
+      />
     </PageShell>
   );
 }
