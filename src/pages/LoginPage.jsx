@@ -241,16 +241,13 @@ export default function LoginPage() {
                 </form>
               )}
 
-              {configurado ? (
-                <div className="text-center mt-3">
-                  <Link to="/esqueci-senha" className="small text-decoration-none">
+              <div className="d-grid gap-2 mt-3">
+                {configurado ? (
+                  <Link to="/esqueci-senha" className="btn btn-outline-success btn-sm">
                     Esqueci minha senha
                   </Link>
-                </div>
-              ) : null}
-
-              <div className="text-center mt-2">
-                <Link to="/" className="small text-decoration-none">
+                ) : null}
+                <Link to="/" className="btn btn-outline-success btn-sm">
                   Voltar ao site
                 </Link>
               </div>

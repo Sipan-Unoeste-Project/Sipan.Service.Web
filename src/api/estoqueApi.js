@@ -1,5 +1,5 @@
 import { apiRequest, buildQuery } from './client.js';
-import { formatDateBr, formatDateTimeBr } from '../utils/dates.js';
+import { formatDateBr } from '../utils/dates.js';
 
 const CATEGORIA_LABEL = {
   alimentos: 'Alimentos',
@@ -64,7 +64,7 @@ export function mapEstoqueUi(item) {
     qtde: item.quantidade,
     categoriaLabel: labelCategoria(item.categoria),
     validadeBr: formatDateBr(item.validade),
-    atualizadoEmBr: formatDateTimeBr(item.updated_at),
+    atualizadoEmBr: formatDateBr(item.updated_at),
     atualizadoPor: item.atualizado_por_nome || null,
   };
 }
@@ -73,7 +73,7 @@ export function mapMovimentoUi(m) {
   return {
     ...m,
     acaoLabel: labelAcaoMovimento(m.acao),
-    createdAtBr: formatDateTimeBr(m.created_at),
+    createdAtBr: formatDateBr(m.created_at),
   };
 }
 

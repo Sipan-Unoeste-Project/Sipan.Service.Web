@@ -1,33 +1,49 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import * as authApi from '../api/authApi';
 import { senhaForteValida, SENHA_FORTE_MSG } from '../utils/senha';
 
 export default function EsqueciSenhaPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [passo, setPasso] = useState(1);
-  const [login, setLogin] = useState('');
   const [email, setEmail] = useState('');
   const [token, setToken] = useState('');
   const [senha, setSenha] = useState('');
   const [confirmar, setConfirmar] = useState('');
   const [erro, setErro] = useState('');
   const [msg, setMsg] = useState('');
+  const [msgVariant, setMsgVariant] = useState('success');
+  const [previewUrl, setPreviewUrl] = useState('');
   const [enviando, setEnviando] = useState(false);
+
+  useEffect(() => {
+    const tokenUrl = searchParams.get('token');
+    if (tokenUrl?.trim()) {
+      setToken(tokenUrl.trim());
+      setPasso(2);
+      setMsgVariant('success');
+      setMsg('Token recebido pelo link do e-mail. Defina a nova senha.');
+    }
+  }, [searchParams]);
 
   async function confirmarIdentidade(event) {
     event.preventDefault();
     setErro('');
     setMsg('');
+    setPreviewUrl('');
     setEnviando(true);
     try {
-      const data = await authApi.esqueciSenha({ login: login.trim(), email: email.trim() });
-      setToken(data.token);
-      setMsg(data.mensagem || 'Identidade confirmada. Defina a nova senha.');
+      const data = await authApi.esqueciSenha({ email: email.trim() });
+      const modo = data.modoEnvio || (data.emailEnviado ? 'smtp' : 'console');
+      setMsgVariant(modo === 'console' ? 'warning' : 'success');
+      setMsg(data.mensagem || 'Enviamos as instruções para o seu e-mail.');
+      if (data.previewUrl) setPreviewUrl(data.previewUrl);
+      if (data.token) setToken(data.token);
       setPasso(2);
     } catch (err) {
-      setErro(err instanceof ApiError ? err.message : 'Não foi possível validar os dados.');
+      setErro(err instanceof ApiError ? err.message : 'Não foi possível validar o e-mail.');
     } finally {
       setEnviando(false);
     }
@@ -37,6 +53,10 @@ export default function EsqueciSenhaPage() {
     event.preventDefault();
     setErro('');
     setMsg('');
+    if (!token.trim()) {
+      setErro('Informe o token recebido no e-mail.');
+      return;
+    }
     if (!senhaForteValida(senha)) {
       setErro(SENHA_FORTE_MSG);
       return;
@@ -47,7 +67,8 @@ export default function EsqueciSenhaPage() {
     }
     setEnviando(true);
     try {
-      const data = await authApi.redefinirSenha({ token, senha });
+      const data = await authApi.redefinirSenha({ token: token.trim(), senha });
+      setMsgVariant('success');
       setMsg(data.mensagem || 'Senha redefinida com sucesso.');
       setTimeout(() => navigate('/login', { replace: true }), 1200);
     } catch (err) {
@@ -68,29 +89,24 @@ export default function EsqueciSenhaPage() {
                 <h1 className="h4 fw-bold mt-3 mb-1">Esqueci minha senha</h1>
                 <p className="text-muted small mb-0">
                   {passo === 1
-                    ? 'Informe o login e o e-mail cadastrados para recuperar o acesso.'
-                    : 'Defina uma nova senha forte para a sua conta.'}
+                    ? 'Informe o e-mail cadastrado. Enviaremos um link para redefinir a senha.'
+                    : 'Use o token do e-mail e defina uma nova senha forte.'}
                 </p>
               </div>
 
               {erro && <div className="alert alert-danger py-2">{erro}</div>}
-              {msg && <div className="alert alert-success py-2">{msg}</div>}
+              {msg && <div className={`alert alert-${msgVariant} py-2`}>{msg}</div>}
+              {previewUrl && (
+                <div className="alert alert-info py-2 small">
+                  Prévia do e-mail:{' '}
+                  <a href={previewUrl} target="_blank" rel="noreferrer">
+                    abrir aqui
+                  </a>
+                </div>
+              )}
 
               {passo === 1 ? (
                 <form onSubmit={confirmarIdentidade}>
-                  <div className="mb-3">
-                    <label htmlFor="login" className="form-label fw-semibold">
-                      Login
-                    </label>
-                    <input
-                      id="login"
-                      className="form-control"
-                      value={login}
-                      onChange={(e) => setLogin(e.target.value)}
-                      autoComplete="username"
-                      required
-                    />
-                  </div>
                   <div className="mb-4">
                     <label htmlFor="email" className="form-label fw-semibold">
                       E-mail
@@ -106,11 +122,24 @@ export default function EsqueciSenhaPage() {
                     />
                   </div>
                   <button type="submit" className="btn btn-success w-100" disabled={enviando}>
-                    {enviando ? 'Validando...' : 'Continuar'}
+                    {enviando ? 'Enviando...' : 'Enviar e-mail de recuperação'}
                   </button>
                 </form>
               ) : (
                 <form onSubmit={salvarNovaSenha}>
+                  <div className="mb-3">
+                    <label htmlFor="token-recuperacao" className="form-label fw-semibold">
+                      Token do e-mail
+                    </label>
+                    <input
+                      id="token-recuperacao"
+                      className="form-control"
+                      value={token}
+                      onChange={(e) => setToken(e.target.value)}
+                      placeholder="Cole o token recebido"
+                      required
+                    />
+                  </div>
                   <div className="mb-3">
                     <label htmlFor="nova-senha" className="form-label fw-semibold">
                       Nova senha
@@ -146,8 +175,8 @@ export default function EsqueciSenhaPage() {
                 </form>
               )}
 
-              <div className="text-center mt-3">
-                <Link to="/login" className="small text-decoration-none">
+              <div className="d-grid mt-3">
+                <Link to="/login" className="btn btn-outline-success btn-sm">
                   Voltar ao login
                 </Link>
               </div>

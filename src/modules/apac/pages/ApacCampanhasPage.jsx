@@ -3,24 +3,21 @@ import { useLocation } from 'react-router-dom';
 import { ApiError } from '../../../api/client';
 import { usePermissao } from '../../../hooks/usePermissao';
 import * as campanhasApi from '../../../api/campanhasApi';
-import { formatDateBr, getDataAtualIso, toIsoDate } from '../../../utils/dates';
-import { maskDate } from '../../../utils/masks';
+import { getDataAtualIso, toIsoDate } from '../../../utils/dates';
 import PageShell from '../../../components/PageShell';
 import ConfirmModal from '../../../components/ConfirmModal';
+import DoacaoValorModal from '../../../components/DoacaoValorModal';
+import DateInputBr from '../../../components/DateInputBr';
 import ActionIconButtons from '../../../components/ActionIconButtons';
 import FeedbackAlert from '../../../components/FeedbackAlert';
 import { useTimedMessage } from '../../../hooks/useTimedMessage';
 import { parseValor, formatBRL } from '../storage/apacStorage';
 
-function hojeBr() {
-  return formatDateBr(getDataAtualIso());
-}
-
 const emptyForm = {
   nome: '',
   descricao: '',
-  dataInicio: hojeBr(),
-  dataFim: hojeBr(),
+  dataInicio: getDataAtualIso(),
+  dataFim: getDataAtualIso(),
   meta: '',
 };
 
@@ -42,6 +39,8 @@ export default function ApacCampanhasPage() {
   const [msg, setMsg] = useTimedMessage(3000);
   const [erro, setErro] = useTimedMessage(6000);
   const [excluirId, setExcluirId] = useState(null);
+  const [doarCampanha, setDoarCampanha] = useState(null);
+  const [salvandoDoacao, setSalvandoDoacao] = useState(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -112,13 +111,13 @@ export default function ApacCampanhasPage() {
       setForm({
         nome: campanha.nome,
         descricao: campanha.descricao || '',
-        dataInicio: formatDateBr(campanha.dataInicio) || hojeBr(),
-        dataFim: formatDateBr(campanha.dataFim || campanha.dataInicio) || hojeBr(),
+        dataInicio: toIsoDate(campanha.dataInicio) || getDataAtualIso(),
+        dataFim: toIsoDate(campanha.dataFim || campanha.dataInicio) || getDataAtualIso(),
         meta: String(campanha.meta),
       });
     } else {
       setEditando(null);
-      const hoje = hojeBr();
+      const hoje = getDataAtualIso();
       setForm({ ...emptyForm, dataInicio: hoje, dataFim: hoje });
     }
     setMostrarForm(true);
@@ -127,7 +126,7 @@ export default function ApacCampanhasPage() {
   function fecharForm() {
     setMostrarForm(false);
     setEditando(null);
-    const hoje = hojeBr();
+    const hoje = getDataAtualIso();
     setForm({ ...emptyForm, dataInicio: hoje, dataFim: hoje });
   }
 
@@ -136,7 +135,7 @@ export default function ApacCampanhasPage() {
     const inicioIso = toIsoDate(form.dataInicio);
     const fimIso = toIsoDate(form.dataFim);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(inicioIso) || !/^\d{4}-\d{2}-\d{2}$/.test(fimIso)) {
-      setErro('Informe as datas no formato dd/mm/aaaa.');
+      setErro('Selecione a data de início e a data de fim.');
       return;
     }
     if (fimIso < inicioIso) {
@@ -159,7 +158,7 @@ export default function ApacCampanhasPage() {
       }
       setMostrarForm(false);
       setEditando(null);
-      const hoje = hojeBr();
+      const hoje = getDataAtualIso();
       setForm({ ...emptyForm, dataInicio: hoje, dataFim: hoje });
       await carregar();
     } catch (err) {
@@ -180,20 +179,23 @@ export default function ApacCampanhasPage() {
     }
   }
 
-  async function registrarDoacao(id) {
-    const valor = window.prompt('Valor da doação (R$):');
-    if (!valor) return;
-    const v = parseValor(valor);
+  async function confirmarDoacao(valorDigitado) {
+    if (!doarCampanha || salvandoDoacao) return;
+    const v = parseValor(valorDigitado);
     if (v <= 0) {
       setErro('Informe um valor positivo.');
       return;
     }
+    setSalvandoDoacao(true);
     try {
-      await campanhasApi.registrarDoacaoCampanha(id, v);
+      await campanhasApi.registrarDoacaoCampanha(doarCampanha.id, v);
+      setDoarCampanha(null);
       setMsg(`Doação de ${formatBRL(v)} registrada.`);
       await carregar();
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : 'Erro ao registrar doação.');
+    } finally {
+      setSalvandoDoacao(false);
     }
   }
 
@@ -234,30 +236,25 @@ export default function ApacCampanhasPage() {
                   />
                 </div>
                 <div className="col-md-3">
-                  <label className="form-label">Data de início</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    inputMode="numeric"
-                    placeholder="dd/mm/aaaa"
-                    maxLength={10}
+                  <label className="form-label" htmlFor="campanha-data-inicio">
+                    Data de início
+                  </label>
+                  <DateInputBr
+                    id="campanha-data-inicio"
                     value={form.dataInicio}
-                    onChange={(e) =>
-                      setForm({ ...form, dataInicio: maskDate(e.target.value) })
-                    }
+                    onChange={(e) => setForm({ ...form, dataInicio: e.target.value })}
                     required
                   />
                 </div>
                 <div className="col-md-3">
-                  <label className="form-label">Data de fim</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    inputMode="numeric"
-                    placeholder="dd/mm/aaaa"
-                    maxLength={10}
+                  <label className="form-label" htmlFor="campanha-data-fim">
+                    Data de fim
+                  </label>
+                  <DateInputBr
+                    id="campanha-data-fim"
                     value={form.dataFim}
-                    onChange={(e) => setForm({ ...form, dataFim: maskDate(e.target.value) })}
+                    min={form.dataInicio || undefined}
+                    onChange={(e) => setForm({ ...form, dataFim: e.target.value })}
                     required
                   />
                 </div>
@@ -309,20 +306,14 @@ export default function ApacCampanhasPage() {
               aria-label="Buscar por nome"
             />
 
-            <input
-              type="text"
-              className="form-control"
-              style={{ maxWidth: 140 }}
-              inputMode="numeric"
-              placeholder="dd/mm/aaaa"
-              maxLength={10}
-              value={rascunho.data}
-              onChange={(e) =>
-                setRascunho((prev) => ({ ...prev, data: maskDate(e.target.value) }))
-              }
-              title="Campanhas em andamento nesta data"
-              aria-label="Filtrar por data"
-            />
+            <div style={{ maxWidth: 220 }}>
+              <DateInputBr
+                value={rascunho.data}
+                onChange={(e) => setRascunho((prev) => ({ ...prev, data: e.target.value }))}
+                title="Campanhas em andamento nesta data"
+                aria-label="Filtrar por data"
+              />
+            </div>
 
             <div className="btn-group flex-wrap" role="group" aria-label="Filtrar por situação">
               {[
@@ -394,19 +385,21 @@ export default function ApacCampanhasPage() {
                         <p className="small mb-3">
                           {formatBRL(c.arrecadado)} de {formatBRL(c.meta)} estimados ({pct.toFixed(0)}%)
                         </p>
-                        {!modoPublico && (
+                        {(!modoPublico || podeDoar) && (
                           <div className="d-flex flex-wrap gap-1 align-items-center">
-                            <ActionIconButtons
-                              onEdit={() => abrirForm(c)}
-                              onDelete={() => setExcluirId(c.id)}
-                            />
+                            {!modoPublico && (
+                              <ActionIconButtons
+                                onEdit={() => abrirForm(c)}
+                                onDelete={() => setExcluirId(c.id)}
+                              />
+                            )}
                             {podeDoar && (
                               <button
                                 type="button"
                                 className="btn btn-sm btn-outline-success"
                                 title="Doar"
                                 aria-label="Doar"
-                                onClick={() => registrarDoacao(c.id)}
+                                onClick={() => setDoarCampanha(c)}
                               >
                                 <i className="bi bi-currency-dollar" aria-hidden="true" />
                               </button>
@@ -428,6 +421,15 @@ export default function ApacCampanhasPage() {
         message="Deseja excluir esta campanha?"
         onConfirm={confirmarExclusao}
         onCancel={() => setExcluirId(null)}
+      />
+
+      <DoacaoValorModal
+        show={!!doarCampanha}
+        campanhaNome={doarCampanha?.nome}
+        onConfirm={confirmarDoacao}
+        onCancel={() => {
+          if (!salvandoDoacao) setDoarCampanha(null);
+        }}
       />
     </PageShell>
   );

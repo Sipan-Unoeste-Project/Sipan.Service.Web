@@ -26,11 +26,11 @@ export function logout() {
   return apiRequest('/api/auth/logout', { method: 'POST' }).catch(() => null);
 }
 
-/** Confirma login + e-mail e retorna token de recuperação. */
-export function esqueciSenha({ login, email }) {
+/** Solicita recuperação de senha pelo e-mail cadastrado. */
+export function esqueciSenha({ email }) {
   return apiRequest('/api/auth/esqueci-senha', {
     method: 'POST',
-    body: JSON.stringify({ login, email }),
+    body: JSON.stringify({ email }),
   });
 }
 
