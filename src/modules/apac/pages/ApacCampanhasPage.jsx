@@ -4,6 +4,7 @@ import { ApiError } from '../../../api/client';
 import { usePermissao } from '../../../hooks/usePermissao';
 import * as campanhasApi from '../../../api/campanhasApi';
 import { getDataAtualIso, toIsoDate } from '../../../utils/dates';
+import { formatMoneyBr, maskMoneyBr } from '../../../utils/masks';
 import PageShell from '../../../components/PageShell';
 import ConfirmModal from '../../../components/ConfirmModal';
 import DoacaoValorModal from '../../../components/DoacaoValorModal';
@@ -13,13 +14,51 @@ import FeedbackAlert from '../../../components/FeedbackAlert';
 import { useTimedMessage } from '../../../hooks/useTimedMessage';
 import { parseValor, formatBRL } from '../storage/apacStorage';
 
-const emptyForm = {
-  nome: '',
-  descricao: '',
-  dataInicio: getDataAtualIso(),
-  dataFim: getDataAtualIso(),
-  meta: '',
-};
+const DESCRICAO_MAX = 500;
+
+function addDaysIso(iso, days) {
+  const base = toIsoDate(iso) || getDataAtualIso();
+  const d = new Date(`${base}T12:00:00`);
+  d.setDate(d.getDate() + days);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function formNovoPadrao() {
+  const hoje = getDataAtualIso();
+  return {
+    nome: '',
+    descricao: '',
+    dataInicio: hoje,
+    dataFim: addDaysIso(hoje, 7),
+    meta: '',
+  };
+}
+
+const emptyForm = formNovoPadrao();
+
+function isCampanhaAtiva(status) {
+  return status === 'ativa' || status === 'planejada';
+}
+
+function diasRestantes(dataFim) {
+  const fim = toIsoDate(dataFim);
+  if (!fim) return null;
+  const hoje = getDataAtualIso();
+  const ms =
+    new Date(`${fim}T12:00:00`).getTime() - new Date(`${hoje}T12:00:00`).getTime();
+  return Math.ceil(ms / 86400000);
+}
+
+function labelDiasRestantes(dias) {
+  if (dias == null) return null;
+  if (dias < 0) return 'Prazo encerrado';
+  if (dias === 0) return 'Encerra hoje';
+  if (dias === 1) return 'Encerra amanhã';
+  return `Encerra em ${dias} dias`;
+}
 
 export default function ApacCampanhasPage() {
   const location = useLocation();
@@ -30,7 +69,6 @@ export default function ApacCampanhasPage() {
     !podeRecurso('campanhas');
   const [dados, setDados] = useState({ ativas: [], encerradas: [] });
   const [loading, setLoading] = useState(true);
-  const [rascunho, setRascunho] = useState({ nome: '', data: '' });
   const [filtro, setFiltro] = useState({ nome: '', data: '' });
   const [filtroStatus, setFiltroStatus] = useState('todas');
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -41,6 +79,9 @@ export default function ApacCampanhasPage() {
   const [excluirId, setExcluirId] = useState(null);
   const [doarCampanha, setDoarCampanha] = useState(null);
   const [salvandoDoacao, setSalvandoDoacao] = useState(false);
+  const [salvando, setSalvando] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
+  const [datasAlteradas, setDatasAlteradas] = useState(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -71,14 +112,30 @@ export default function ApacCampanhasPage() {
     [dados.ativas, dados.encerradas]
   );
 
+  const filtroAtivo = Boolean(
+    filtro.nome.trim() || filtro.data || filtroStatus !== 'todas'
+  );
+
+  const chipsFiltro = useMemo(() => {
+    const chips = [];
+    if (filtro.nome.trim()) chips.push(`Nome: “${filtro.nome.trim()}”`);
+    if (filtro.data) {
+      const [y, m, d] = toIsoDate(filtro.data).split('-');
+      chips.push(`Data: ${d}/${m}/${y}`);
+    }
+    if (filtroStatus === 'ativas') chips.push('Situação: Ativas');
+    if (filtroStatus === 'encerradas') chips.push('Situação: Encerradas');
+    return chips;
+  }, [filtro, filtroStatus]);
+
   const listaFiltrada = useMemo(() => {
     const termo = filtro.nome.trim().toLowerCase();
     const dataFiltro = filtro.data ? toIsoDate(filtro.data) : '';
 
-    return todas.filter((c) => {
-      const isAtiva = c.status === 'planejada' || c.status === 'ativa';
-      if (filtroStatus === 'ativas' && !isAtiva) return false;
-      if (filtroStatus === 'encerradas' && isAtiva) return false;
+    const filtradas = todas.filter((c) => {
+      const ativa = isCampanhaAtiva(c.status);
+      if (filtroStatus === 'ativas' && !ativa) return false;
+      if (filtroStatus === 'encerradas' && ativa) return false;
 
       if (termo && !(c.nome || '').toLowerCase().includes(termo)) return false;
 
@@ -91,21 +148,26 @@ export default function ApacCampanhasPage() {
 
       return true;
     });
+
+    return filtradas.sort((a, b) => {
+      const aAtiva = isCampanhaAtiva(a.status) ? 0 : 1;
+      const bAtiva = isCampanhaAtiva(b.status) ? 0 : 1;
+      if (aAtiva !== bAtiva) return aAtiva - bAtiva;
+      if (aAtiva === 0) {
+        return String(a.dataFim || '').localeCompare(String(b.dataFim || ''));
+      }
+      return String(b.dataFim || '').localeCompare(String(a.dataFim || ''));
+    });
   }, [todas, filtro, filtroStatus]);
 
-  function aplicarFiltros(e) {
-    e?.preventDefault?.();
-    setFiltro({ ...rascunho });
-  }
-
   function limparFiltros() {
-    const vazio = { nome: '', data: '' };
-    setRascunho(vazio);
-    setFiltro(vazio);
+    setFiltro({ nome: '', data: '' });
     setFiltroStatus('todas');
   }
 
   function abrirForm(campanha = null) {
+    setFormErrors({});
+    setDatasAlteradas(false);
     if (campanha) {
       setEditando(campanha);
       setForm({
@@ -113,12 +175,11 @@ export default function ApacCampanhasPage() {
         descricao: campanha.descricao || '',
         dataInicio: toIsoDate(campanha.dataInicio) || getDataAtualIso(),
         dataFim: toIsoDate(campanha.dataFim || campanha.dataInicio) || getDataAtualIso(),
-        meta: String(campanha.meta),
+        meta: formatMoneyBr(campanha.meta),
       });
     } else {
       setEditando(null);
-      const hoje = getDataAtualIso();
-      setForm({ ...emptyForm, dataInicio: hoje, dataFim: hoje });
+      setForm(formNovoPadrao());
     }
     setMostrarForm(true);
   }
@@ -126,28 +187,66 @@ export default function ApacCampanhasPage() {
   function fecharForm() {
     setMostrarForm(false);
     setEditando(null);
-    const hoje = getDataAtualIso();
-    setForm({ ...emptyForm, dataInicio: hoje, dataFim: hoje });
+    setFormErrors({});
+    setDatasAlteradas(false);
+    setSalvando(false);
+    setForm(formNovoPadrao());
+  }
+
+  function alterarDataInicio(iso) {
+    setDatasAlteradas(true);
+    setForm((prev) => {
+      const inicio = toIsoDate(iso) || iso;
+      let fim = toIsoDate(prev.dataFim) || prev.dataFim;
+      if (!fim || fim < inicio) {
+        fim = addDaysIso(inicio, 7);
+      }
+      return { ...prev, dataInicio: inicio, dataFim: fim };
+    });
+    setFormErrors((prev) => ({ ...prev, dataInicio: '', dataFim: '' }));
+  }
+
+  function alterarDataFim(iso) {
+    setDatasAlteradas(true);
+    setForm((prev) => ({ ...prev, dataFim: toIsoDate(iso) || iso }));
+    setFormErrors((prev) => ({ ...prev, dataFim: '' }));
+  }
+
+  function validarFormulario() {
+    const errs = {};
+    if (!form.nome.trim()) errs.nome = 'Informe o nome da campanha.';
+    const inicioIso = toIsoDate(form.dataInicio);
+    const fimIso = toIsoDate(form.dataFim);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(inicioIso)) errs.dataInicio = 'Selecione a data de início.';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fimIso)) errs.dataFim = 'Selecione a data de fim.';
+    if (inicioIso && fimIso && fimIso < inicioIso) {
+      errs.dataFim = 'A data de fim deve ser igual ou posterior à data de início.';
+    }
+    const metaNum = parseValor(form.meta);
+    if (!form.meta || metaNum <= 0) errs.meta = 'Informe uma estimativa maior que zero.';
+    if ((form.descricao || '').length > DESCRICAO_MAX) {
+      errs.descricao = `A descrição pode ter no máximo ${DESCRICAO_MAX} caracteres.`;
+    }
+    return errs;
   }
 
   async function salvar(e) {
     e.preventDefault();
-    const inicioIso = toIsoDate(form.dataInicio);
-    const fimIso = toIsoDate(form.dataFim);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(inicioIso) || !/^\d{4}-\d{2}-\d{2}$/.test(fimIso)) {
-      setErro('Selecione a data de início e a data de fim.');
-      return;
-    }
-    if (fimIso < inicioIso) {
-      setErro('A data de fim deve ser igual ou posterior à data de início.');
+    const errs = validarFormulario();
+    setFormErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      setErro('Revise os campos destacados.');
       return;
     }
 
+    const inicioIso = toIsoDate(form.dataInicio);
+    const fimIso = toIsoDate(form.dataFim);
     const body = campanhasApi.formToCampanhaBody(
       { ...form, dataInicio: inicioIso, dataFim: fimIso },
       editando?.status || 'ativa'
     );
 
+    setSalvando(true);
     try {
       if (editando) {
         await campanhasApi.updateCampanha(editando.id, body);
@@ -158,13 +257,25 @@ export default function ApacCampanhasPage() {
       }
       setMostrarForm(false);
       setEditando(null);
-      const hoje = getDataAtualIso();
-      setForm({ ...emptyForm, dataInicio: hoje, dataFim: hoje });
+      setFormErrors({});
+      setDatasAlteradas(false);
+      setForm(formNovoPadrao());
       await carregar();
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : 'Erro ao salvar campanha.');
+    } finally {
+      setSalvando(false);
     }
   }
+
+  useEffect(() => {
+    if (!mostrarForm) return undefined;
+    function onKey(e) {
+      if (e.key === 'Escape' && !salvando) fecharForm();
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mostrarForm, salvando]);
 
   async function confirmarExclusao() {
     if (!excluirId) return;
@@ -200,10 +311,17 @@ export default function ApacCampanhasPage() {
   }
 
   function badgeClass(status) {
-    if (status === 'ativa' || status === 'planejada') return 'bg-success';
-    if (status === 'cancelada') return 'bg-secondary';
-    return 'bg-dark';
+    if (status === 'ativa') return 'bg-success';
+    if (status === 'planejada') return 'text-bg-success';
+    return 'bg-secondary';
   }
+
+  const mesmoDia =
+    datasAlteradas &&
+    form.dataInicio &&
+    form.dataFim &&
+    toIsoDate(form.dataInicio) === toIsoDate(form.dataFim);
+  const descLen = (form.descricao || '').length;
 
   return (
     <PageShell
@@ -224,66 +342,130 @@ export default function ApacCampanhasPage() {
         <div className="card border-0 shadow-sm mb-4">
           <div className="card-body">
             <h5 className="fw-semibold mb-3">{editando ? 'Editar campanha' : 'Nova campanha'}</h5>
-            <form onSubmit={salvar}>
+            <p className="text-muted small mb-3">
+              Defina o período e a estimativa de arrecadação. Campos com * são obrigatórios.
+            </p>
+            <form onSubmit={salvar} noValidate>
               <div className="row g-3">
                 <div className="col-md-6">
-                  <label className="form-label">Nome</label>
+                  <label className="form-label" htmlFor="campanha-nome">
+                    Nome <span className="text-danger">*</span>
+                  </label>
                   <input
-                    className="form-control"
+                    id="campanha-nome"
+                    className={`form-control${formErrors.nome ? ' is-invalid' : ''}`}
                     value={form.nome}
-                    onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                    required
+                    onChange={(e) => {
+                      setForm({ ...form, nome: e.target.value });
+                      setFormErrors((prev) => ({ ...prev, nome: '' }));
+                    }}
+                    placeholder="Ex.: Campanha de ração de inverno"
+                    maxLength={120}
+                    disabled={salvando}
                   />
+                  {formErrors.nome ? <div className="invalid-feedback">{formErrors.nome}</div> : null}
                 </div>
                 <div className="col-md-3">
                   <label className="form-label" htmlFor="campanha-data-inicio">
-                    Data de início
+                    Data de início <span className="text-danger">*</span>
                   </label>
                   <DateInputBr
                     id="campanha-data-inicio"
                     value={form.dataInicio}
-                    onChange={(e) => setForm({ ...form, dataInicio: e.target.value })}
-                    required
+                    onChange={(e) => alterarDataInicio(e.target.value)}
+                    className={`form-control${formErrors.dataInicio ? ' is-invalid' : ''}`}
+                    disabled={salvando}
                   />
+                  {formErrors.dataInicio ? (
+                    <div className="invalid-feedback d-block">{formErrors.dataInicio}</div>
+                  ) : (
+                    <div className="form-text">Ao alterar o início, o fim se ajusta se ficar inválido.</div>
+                  )}
                 </div>
                 <div className="col-md-3">
                   <label className="form-label" htmlFor="campanha-data-fim">
-                    Data de fim
+                    Data de fim <span className="text-danger">*</span>
                   </label>
                   <DateInputBr
                     id="campanha-data-fim"
                     value={form.dataFim}
                     min={form.dataInicio || undefined}
-                    onChange={(e) => setForm({ ...form, dataFim: e.target.value })}
-                    required
+                    onChange={(e) => alterarDataFim(e.target.value)}
+                    className={`form-control${formErrors.dataFim ? ' is-invalid' : ''}`}
+                    disabled={salvando}
                   />
+                  {formErrors.dataFim ? (
+                    <div className="invalid-feedback d-block">{formErrors.dataFim}</div>
+                  ) : (
+                    <div className="form-text">Padrão: 7 dias após o início.</div>
+                  )}
                 </div>
+                {mesmoDia ? (
+                  <div className="col-12">
+                    <div className="alert alert-warning py-2 mb-0 small">
+                      Início e fim estão no mesmo dia. A campanha terá duração de um único dia.
+                    </div>
+                  </div>
+                ) : null}
                 <div className="col-md-4">
-                  <label className="form-label">Estimativa de valor (R$)</label>
+                  <label className="form-label" htmlFor="campanha-meta">
+                    Estimativa de valor (R$) <span className="text-danger">*</span>
+                  </label>
                   <input
-                    className="form-control"
+                    id="campanha-meta"
+                    className={`form-control${formErrors.meta ? ' is-invalid' : ''}`}
                     value={form.meta}
-                    onChange={(e) => setForm({ ...form, meta: e.target.value })}
-                    placeholder="Ex.: 5000,00"
-                    required
+                    onChange={(e) => {
+                      setForm({ ...form, meta: maskMoneyBr(e.target.value) });
+                      setFormErrors((prev) => ({ ...prev, meta: '' }));
+                    }}
+                    placeholder="0,00"
+                    inputMode="numeric"
+                    disabled={salvando}
                   />
-                  <div className="form-text">Pode ultrapassar a estimativa sem encerrar a campanha.</div>
+                  {formErrors.meta ? (
+                    <div className="invalid-feedback">{formErrors.meta}</div>
+                  ) : (
+                    <div className="form-text">Pode ultrapassar a estimativa sem encerrar a campanha.</div>
+                  )}
                 </div>
                 <div className="col-12">
-                  <label className="form-label">Descrição</label>
+                  <div className="d-flex justify-content-between align-items-baseline">
+                    <label className="form-label" htmlFor="campanha-descricao">
+                      Descrição
+                    </label>
+                    <span className={`small ${descLen > DESCRICAO_MAX ? 'text-danger' : 'text-muted'}`}>
+                      {descLen}/{DESCRICAO_MAX}
+                    </span>
+                  </div>
                   <textarea
-                    className="form-control"
+                    id="campanha-descricao"
+                    className={`form-control${formErrors.descricao ? ' is-invalid' : ''}`}
                     rows={3}
                     value={form.descricao}
-                    onChange={(e) => setForm({ ...form, descricao: e.target.value })}
+                    maxLength={DESCRICAO_MAX}
+                    onChange={(e) => {
+                      setForm({ ...form, descricao: e.target.value.slice(0, DESCRICAO_MAX) });
+                      setFormErrors((prev) => ({ ...prev, descricao: '' }));
+                    }}
+                    placeholder="Objetivo, público ou detalhes da arrecadação (opcional)"
+                    disabled={salvando}
                   />
+                  {formErrors.descricao ? (
+                    <div className="invalid-feedback">{formErrors.descricao}</div>
+                  ) : null}
                 </div>
               </div>
               <div className="d-flex gap-2 mt-3">
-                <button type="submit" className="btn btn-success">
-                  Salvar
+                <button type="submit" className="btn btn-success" disabled={salvando}>
+                  {salvando ? 'Salvando…' : 'Salvar'}
                 </button>
-                <button type="button" className="btn btn-outline-secondary" onClick={fecharForm}>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={fecharForm}
+                  disabled={salvando}
+                >
                   Cancelar
                 </button>
               </div>
@@ -292,24 +474,21 @@ export default function ApacCampanhasPage() {
         </div>
       ) : (
         <>
-          <form
-            className="d-flex flex-wrap gap-2 mb-3 align-items-center"
-            onSubmit={aplicarFiltros}
-          >
+          <div className="d-flex flex-wrap gap-2 mb-2 align-items-center">
             <input
               type="search"
               className="form-control"
               style={{ maxWidth: 280 }}
               placeholder="Buscar por nome…"
-              value={rascunho.nome}
-              onChange={(e) => setRascunho((prev) => ({ ...prev, nome: e.target.value }))}
+              value={filtro.nome}
+              onChange={(e) => setFiltro((prev) => ({ ...prev, nome: e.target.value }))}
               aria-label="Buscar por nome"
             />
 
             <div style={{ maxWidth: 220 }}>
               <DateInputBr
-                value={rascunho.data}
-                onChange={(e) => setRascunho((prev) => ({ ...prev, data: e.target.value }))}
+                value={filtro.data}
+                onChange={(e) => setFiltro((prev) => ({ ...prev, data: e.target.value }))}
                 title="Campanhas em andamento nesta data"
                 aria-label="Filtrar por data"
               />
@@ -334,18 +513,23 @@ export default function ApacCampanhasPage() {
               ))}
             </div>
 
-            <button type="submit" className="btn btn-sm btn-success">
-              Filtrar
-            </button>
-            <button type="button" className="btn btn-sm btn-outline-secondary" onClick={limparFiltros}>
-              Limpar
-            </button>
+            {filtroAtivo ? (
+              <button type="button" className="btn btn-sm btn-outline-secondary" onClick={limparFiltros}>
+                Limpar filtros
+              </button>
+            ) : null}
 
             <span className="ms-auto text-muted small">
               {listaFiltrada.length}{' '}
               {listaFiltrada.length === 1 ? 'resultado' : 'resultados'}
             </span>
-          </form>
+          </div>
+
+          {filtroAtivo ? (
+            <div className="mb-3 small text-muted">
+              Filtrado por: {chipsFiltro.join(' · ')}
+            </div>
+          ) : null}
 
           <div className="row g-3">
             {loading ? (
@@ -353,59 +537,100 @@ export default function ApacCampanhasPage() {
             ) : listaFiltrada.length === 0 ? (
               <div className="col-12 text-center py-5 text-muted">
                 <p className="mb-1 fw-semibold">Nenhuma campanha encontrada.</p>
-                <small>Tente ajustar a busca ou o filtro.</small>
+                <small className="d-block mb-3">
+                  {filtroAtivo
+                    ? 'Nenhum resultado para os filtros atuais.'
+                    : 'Ainda não há campanhas cadastradas.'}
+                </small>
+                {filtroAtivo ? (
+                  <button type="button" className="btn btn-sm btn-outline-success" onClick={limparFiltros}>
+                    Limpar filtros
+                  </button>
+                ) : !modoPublico ? (
+                  <button type="button" className="btn btn-sm btn-success" onClick={() => abrirForm()}>
+                    Nova campanha
+                  </button>
+                ) : null}
               </div>
             ) : (
               listaFiltrada.map((c) => {
                 const pct = c.meta > 0 ? Math.min(100, (c.arrecadado / c.meta) * 100) : 0;
-                const podeDoar = c.status === 'ativa' || c.status === 'planejada';
+                const podeDoar = isCampanhaAtiva(c.status);
+                const encerrada = !podeDoar;
+                const dias = podeDoar ? diasRestantes(c.dataFim) : null;
+                const textoDias = labelDiasRestantes(dias);
+                const descricao = (c.descricao || '').trim();
+
                 return (
                   <div className="col-md-6" key={c.id}>
                     <div className="card border-0 shadow-sm h-100">
-                      <div className="card-body">
-                        <div className="d-flex justify-content-between align-items-start mb-2">
+                      <div className="card-body d-flex flex-column">
+                        <div className="d-flex justify-content-between align-items-start gap-2 mb-2">
                           <h5 className="fw-semibold mb-0">{c.nome}</h5>
                           <span className={`badge ${badgeClass(c.status)}`}>{c.statusLabel}</span>
                         </div>
-                        <p className="text-muted small">{c.descricao}</p>
+
+                        {descricao ? (
+                          <p className="text-muted small mb-2">{descricao}</p>
+                        ) : null}
+
                         <p className="small mb-1">
                           Início: <strong>{c.dataInicioBr}</strong>
                           {' · '}
                           Fim: <strong>{c.dataFimBr}</strong>
                         </p>
                         {c.createdAtBr ? (
-                          <p className="small text-muted mb-2">Criada em: {c.createdAtBr}</p>
+                          <p className="small text-muted mb-1">Criada em: {c.createdAtBr}</p>
                         ) : null}
-                        <div className="progress mb-2" style={{ height: 8 }}>
+                        {textoDias ? (
+                          <p className="small text-success fw-semibold mb-2">{textoDias}</p>
+                        ) : null}
+                        {encerrada ? (
+                          <p className="small text-muted mb-2">Campanha encerrada — doações indisponíveis.</p>
+                        ) : null}
+
+                        <div className="progress mb-2" style={{ height: pct > 0 ? 12 : 8 }}>
                           <div
-                            className="progress-bar bg-success"
-                            style={{ width: `${pct}%` }}
+                            className={`progress-bar ${pct > 0 ? 'bg-success' : 'bg-light'}`}
+                            style={{ width: `${pct > 0 ? pct : 0}%` }}
+                            role="progressbar"
+                            aria-valuenow={pct}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
                           />
                         </div>
                         <p className="small mb-3">
-                          {formatBRL(c.arrecadado)} de {formatBRL(c.meta)} estimados ({pct.toFixed(0)}%)
+                          {pct <= 0 ? (
+                            <span className="text-muted">Nenhuma doação ainda · meta {formatBRL(c.meta)}</span>
+                          ) : (
+                            <>
+                              {formatBRL(c.arrecadado)} de {formatBRL(c.meta)} estimados ({pct.toFixed(0)}%)
+                            </>
+                          )}
                         </p>
-                        {(!modoPublico || podeDoar) && (
-                          <div className="d-flex flex-wrap gap-1 align-items-center">
-                            {!modoPublico && (
-                              <ActionIconButtons
-                                onEdit={() => abrirForm(c)}
-                                onDelete={() => setExcluirId(c.id)}
-                              />
-                            )}
-                            {podeDoar && (
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-outline-success"
-                                title="Doar"
-                                aria-label="Doar"
-                                onClick={() => setDoarCampanha(c)}
-                              >
-                                <i className="bi bi-currency-dollar" aria-hidden="true" />
-                              </button>
-                            )}
-                          </div>
-                        )}
+
+                        <div className="mt-auto d-flex flex-wrap gap-1 align-items-center">
+                          {!modoPublico && podeDoar ? (
+                            <ActionIconButtons
+                              onEdit={() => abrirForm(c)}
+                              onDelete={() => setExcluirId(c.id)}
+                            />
+                          ) : null}
+                          {!modoPublico && encerrada ? (
+                            <ActionIconButtons onDelete={() => setExcluirId(c.id)} />
+                          ) : null}
+                          {podeDoar ? (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-success"
+                              title="Doar para esta campanha"
+                              aria-label="Doar para esta campanha"
+                              onClick={() => setDoarCampanha(c)}
+                            >
+                              <i className="bi bi-currency-dollar" aria-hidden="true" />
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   </div>

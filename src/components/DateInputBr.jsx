@@ -51,6 +51,7 @@ export default function DateInputBr({
   className = 'form-control',
   min,
   title,
+  disabled = false,
   'aria-label': ariaLabel,
 }) {
   const wrapRef = useRef(null);
@@ -141,6 +142,7 @@ export default function DateInputBr({
   }
 
   function abrirCalendario() {
+    if (disabled) return;
     if (selecionado) setCursor({ y: selecionado.y, m: selecionado.m });
     setAberto((v) => !v);
   }
@@ -161,6 +163,7 @@ export default function DateInputBr({
           title={title}
           aria-label={ariaLabel}
           autoComplete="off"
+          disabled={disabled}
         />
         <button
           type="button"
@@ -169,6 +172,7 @@ export default function DateInputBr({
           title="Abrir calendário"
           aria-label="Abrir calendário"
           aria-expanded={aberto}
+          disabled={disabled}
         >
           <i className="bi bi-calendar3" aria-hidden="true" />
         </button>

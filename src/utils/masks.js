@@ -52,3 +52,28 @@ export function maskDate(value) {
   }
   return digits;
 }
+
+/**
+ * Máscara de moeda BR a partir dos dígitos (centavos): 1234 → 12,34
+ */
+export function maskMoneyBr(value) {
+  const digits = String(value ?? '')
+    .replace(/\D/g, '')
+    .slice(0, 13);
+  if (!digits) return '';
+  const n = Number(digits) / 100;
+  return n.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+/** Formata número para input monetário BR. */
+export function formatMoneyBr(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '';
+  return n.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
