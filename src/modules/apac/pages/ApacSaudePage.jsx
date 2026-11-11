@@ -71,6 +71,8 @@ export default function ApacSaudePage() {
   const [mostrarForm, setMostrarForm] = useState(false);
   const [editando, setEditando] = useState(null);
   const [form, setForm] = useState(emptyReg);
+  const [mostrarSugestoesTitulo, setMostrarSugestoesTitulo] = useState(false);
+  const [indiceSugestaoTitulo, setIndiceSugestaoTitulo] = useState(-1);
   const [msg, setMsg] = useTimedMessage(3000);
   const [erro, setErro] = useTimedMessage(6000);
   const [animais, setAnimais] = useState([]);
@@ -209,6 +211,32 @@ export default function ApacSaudePage() {
         .sort((a, b) => a.proximaIso.localeCompare(b.proximaIso)),
     [data.vacinas]
   );
+
+  const titulosExistentes = useMemo(() => {
+    const nomes = new Map();
+    const titulos =
+      form.tipo === 'vacina'
+        ? data.vacinas.map((vacina) => vacina.nome)
+        : ['exame', 'cirurgia'].includes(form.tipo)
+          ? data.registros
+              .filter((registro) => registro.tipo === form.tipo)
+              .map((registro) => registro.titulo)
+          : [];
+
+    titulos.forEach((titulo) => {
+      const nome = typeof titulo === 'string' ? titulo.trim() : '';
+      const chave = normalizarTextoBusca(nome);
+      if (chave && !nomes.has(chave)) nomes.set(chave, nome);
+    });
+    return [...nomes.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }, [data.registros, data.vacinas, form.tipo]);
+
+  const titulosSugeridos = useMemo(() => {
+    const busca = normalizarTextoBusca(form.titulo);
+    return titulosExistentes.filter((titulo) =>
+      normalizarTextoBusca(titulo).includes(busca)
+    );
+  }, [form.titulo, titulosExistentes]);
 
   const linhaDoTempo = useMemo(() => {
     const eventos = [
@@ -388,7 +416,11 @@ export default function ApacSaudePage() {
                   <FormSelect
                     value={form.tipo}
                     disabled={!!editando}
-                    onChange={(e) => setForm({ ...form, tipo: e.target.value })}
+                    onChange={(e) => {
+                      setForm({ ...form, tipo: e.target.value });
+                      setMostrarSugestoesTitulo(false);
+                      setIndiceSugestaoTitulo(-1);
+                    }}
                   >
                     {TIPOS.map((t) => (
                       <option key={t.value} value={t.value}>
@@ -399,12 +431,104 @@ export default function ApacSaudePage() {
                 </div>
                 <div className="col-md-5">
                   <label className="form-label">Título</label>
-                  <input
-                    className="form-control"
-                    value={form.titulo}
-                    onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-                    required
-                  />
+                  <div className="position-relative">
+                    <input
+                      className="form-control"
+                      value={form.titulo}
+                      onChange={(e) => {
+                        setForm({ ...form, titulo: e.target.value });
+                        setIndiceSugestaoTitulo(-1);
+                        setMostrarSugestoesTitulo(
+                          ['vacina', 'exame', 'cirurgia'].includes(form.tipo)
+                        );
+                      }}
+                      onFocus={() => {
+                        if (['vacina', 'exame', 'cirurgia'].includes(form.tipo)) {
+                          setMostrarSugestoesTitulo(true);
+                        }
+                      }}
+                      onBlur={() => {
+                        setTimeout(() => setMostrarSugestoesTitulo(false), 150);
+                      }}
+                      onKeyDown={(e) => {
+                        if (
+                          !['vacina', 'exame', 'cirurgia'].includes(form.tipo) ||
+                          !mostrarSugestoesTitulo
+                        ) {
+                          return;
+                        }
+                        if (e.key === 'ArrowDown' && titulosSugeridos.length > 0) {
+                          e.preventDefault();
+                          setIndiceSugestaoTitulo((indice) =>
+                            Math.min(indice + 1, titulosSugeridos.length - 1)
+                          );
+                        } else if (e.key === 'ArrowUp' && titulosSugeridos.length > 0) {
+                          e.preventDefault();
+                          setIndiceSugestaoTitulo((indice) => Math.max(indice - 1, 0));
+                        } else if (
+                          e.key === 'Enter' &&
+                          indiceSugestaoTitulo >= 0 &&
+                          titulosSugeridos[indiceSugestaoTitulo]
+                        ) {
+                          e.preventDefault();
+                          setForm({
+                            ...form,
+                            titulo: titulosSugeridos[indiceSugestaoTitulo],
+                          });
+                          setMostrarSugestoesTitulo(false);
+                          setIndiceSugestaoTitulo(-1);
+                        } else if (e.key === 'Escape') {
+                          setMostrarSugestoesTitulo(false);
+                          setIndiceSugestaoTitulo(-1);
+                        }
+                      }}
+                      aria-autocomplete={
+                        ['vacina', 'exame', 'cirurgia'].includes(form.tipo)
+                          ? 'list'
+                          : undefined
+                      }
+                      aria-expanded={
+                        ['vacina', 'exame', 'cirurgia'].includes(form.tipo)
+                          ? mostrarSugestoesTitulo
+                          : undefined
+                      }
+                      required
+                    />
+                    {['vacina', 'exame', 'cirurgia'].includes(form.tipo) &&
+                      mostrarSugestoesTitulo && (
+                      <ul className="autocomplete-list" style={{ right: 0 }} role="listbox">
+                        {titulosSugeridos.length > 0 ? (
+                          titulosSugeridos.map((titulo, indice) => (
+                            <li
+                              key={normalizarTextoBusca(titulo)}
+                              id={`titulo-sugestao-${indice}`}
+                              className={`autocomplete-item ${
+                                indice === indiceSugestaoTitulo ? 'highlight' : ''
+                              }`}
+                              role="option"
+                              aria-selected={indice === indiceSugestaoTitulo}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setForm({ ...form, titulo });
+                                setMostrarSugestoesTitulo(false);
+                                setIndiceSugestaoTitulo(-1);
+                              }}
+                            >
+                              {titulo}
+                            </li>
+                          ))
+                        ) : (
+                          <li className="autocomplete-item text-muted" role="status">
+                            {titulosExistentes.length === 0
+                              ? `Nenhum registro de ${
+                                  TIPOS.find((tipo) => tipo.value === form.tipo)?.label.toLowerCase()
+                                } encontrado ainda.`
+                              : 'Nenhum registro encontrado. Você pode cadastrar um novo título.'}
+                          </li>
+                        )}
+                      </ul>
+                      )}
+                  </div>
                 </div>
                 <div className="col-md-4">
                   <label className="form-label">Data</label>
