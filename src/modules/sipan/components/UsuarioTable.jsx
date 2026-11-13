@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ConfirmModal from '../../../components/ConfirmModal';
+import ActionIconButtons from '../../../components/ActionIconButtons';
 import StatusToggle from '../../../components/StatusToggle';
+import { useAuth } from '../../../context/AuthContext';
 
 const PERMISSOES = ['Administrador', 'Financeiro', 'Veterinário', 'Voluntário'];
 
@@ -15,6 +17,7 @@ const COLS = [
 
 export default function UsuarioTable({ usuarios, onDelete, onStatusChange, salvandoStatusId }) {
   const navigate = useNavigate();
+  const { usuario: usuarioLogado } = useAuth();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('todos');
   const [confirmId, setConfirmId] = useState(null);
@@ -114,7 +117,9 @@ export default function UsuarioTable({ usuarios, onDelete, onStatusChange, salva
               </tr>
             </thead>
             <tbody>
-              {filtered.map((u) => (
+              {filtered.map((u) => {
+                const souEu = Number(usuarioLogado?.id) === Number(u.id);
+                return (
                 <tr key={u.id}>
                   <td className="fw-medium">{u.nome}</td>
                   <td className="text-muted">{u.login}</td>
@@ -124,26 +129,19 @@ export default function UsuarioTable({ usuarios, onDelete, onStatusChange, salva
                     <StatusToggle
                       id={`usuario-status-${u.id}`}
                       ativo={u.status === 'Ativo'}
-                      disabled={salvandoStatusId === u.id}
+                      disabled={souEu || salvandoStatusId === u.id}
                       onChange={(status) => onStatusChange?.(u, status)}
                     />
                   </td>
                   <td>
-                    <button
-                      className="btn btn-sm btn-outline-secondary me-1"
-                      onClick={() => navigate(`/usuarios/${u.id}/editar`)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="btn btn-sm btn-outline-danger"
-                      onClick={() => setConfirmId(u.id)}
-                    >
-                      Excluir
-                    </button>
+                    <ActionIconButtons
+                      onEdit={() => navigate(`/usuarios/${u.id}/editar`)}
+                      onDelete={souEu ? undefined : () => setConfirmId(u.id)}
+                    />
                   </td>
                 </tr>
-              ))}
+              );
+              })}
             </tbody>
           </table>
         </div>

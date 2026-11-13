@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ConfirmModal from '../../../components/ConfirmModal';
+import ActionIconButtons from '../../../components/ActionIconButtons';
 import StatusToggle from '../../../components/StatusToggle';
 
 const AREAS = ['Administrador', 'Financeiro', 'Voluntário', 'Veterinário', 'Recepcionista', 'Auxiliar'];
@@ -130,18 +131,10 @@ export default function VoluntarioTable({ voluntarios, onDelete, onStatusChange,
                     />
                   </td>
                   <td>
-                    <button
-                      className="btn btn-sm btn-outline-secondary me-1"
-                      onClick={() => navigate(`/voluntarios/${f.id}/editar`)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="btn btn-sm btn-outline-danger"
-                      onClick={() => setConfirmId(f.id)}
-                    >
-                      Excluir
-                    </button>
+                    <ActionIconButtons
+                      onEdit={() => navigate(`/voluntarios/${f.id}/editar`)}
+                      onDelete={() => setConfirmId(f.id)}
+                    />
                   </td>
                 </tr>
               ))}

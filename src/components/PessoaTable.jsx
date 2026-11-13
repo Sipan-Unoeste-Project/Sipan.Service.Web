@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ConfirmModal from './ConfirmModal';
+import ActionIconButtons from './ActionIconButtons';
 import { PERFIS_LABEL } from '../utils/pessoaTipos';
 
 const TIPO_PLURAL = { doador: 'Doadores', adotante: 'Adotantes' };
@@ -108,20 +109,10 @@ export default function PessoaTable({ pessoas, onDelete }) {
                   <td className="text-muted">{p.email || '—'}</td>
                   <td className="text-muted small">{formatDate(p.criadoEm)}</td>
                   <td>
-                    <button
-                      className="btn btn-sm btn-outline-secondary me-1"
-                      title="Editar"
-                      onClick={() => navigate(`/pessoas/${p.id}/editar`)}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      className="btn btn-sm btn-outline-danger"
-                      title="Excluir"
-                      onClick={() => setConfirmId(p.id)}
-                    >
-                      Excluir
-                    </button>
+                    <ActionIconButtons
+                      onEdit={() => navigate(`/pessoas/${p.id}/editar`)}
+                      onDelete={() => setConfirmId(p.id)}
+                    />
                   </td>
                 </tr>
               ))}

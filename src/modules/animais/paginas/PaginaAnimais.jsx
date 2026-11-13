@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useAuth } from '../../../context/AuthContext';
+import { usePermissao } from '../../../hooks/usePermissao';
 import PageShell from '../../../components/PageShell';
 import ConfirmModal from '../../../components/ConfirmModal';
 import FeedbackAlert from '../../../components/FeedbackAlert';
@@ -13,8 +13,11 @@ import { listarAnimais, excluirAnimal } from '../utils/storageAnimais';
 
 export default function PaginaAnimais() {
   const location = useLocation();
-  const { autenticado } = useAuth();
-  const modoPublico = location.pathname.startsWith('/publico') || !autenticado;
+  const { autenticado, podeRecurso } = usePermissao();
+  const modoPublico =
+    location.pathname.startsWith('/publico') ||
+    !autenticado ||
+    !podeRecurso('animais');
   const [animais, setAnimais] = useState([]);
   const [animalParaEditar, setAnimalParaEditar] = useState(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);

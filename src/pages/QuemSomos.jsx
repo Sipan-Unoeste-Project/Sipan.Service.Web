@@ -64,14 +64,29 @@ export default function QuemSomos() {
             </div>
             
             <div className="col-md-4 d-flex justify-content-center justify-content-md-end gap-3">
-              <a href="#" style={{ color: 'white', fontSize: '1.5rem' }} title="Facebook">
-                📘
+              <a
+                href="#"
+                style={{ color: 'white', fontSize: '1.5rem', textDecoration: 'none', lineHeight: 1 }}
+                title="Facebook"
+                aria-label="Facebook"
+              >
+                <i className="bi bi-facebook" aria-hidden="true" />
               </a>
-              <a href="#" style={{ color: 'white', fontSize: '1.5rem' }} title="Instagram">
-                📷
+              <a
+                href="#"
+                style={{ color: 'white', fontSize: '1.5rem', textDecoration: 'none', lineHeight: 1 }}
+                title="Instagram"
+                aria-label="Instagram"
+              >
+                <i className="bi bi-instagram" aria-hidden="true" />
               </a>
-              <a href="#" style={{ color: 'white', fontSize: '1.5rem' }} title="WhatsApp">
-                💬
+              <a
+                href="#"
+                style={{ color: 'white', fontSize: '1.5rem', textDecoration: 'none', lineHeight: 1 }}
+                title="WhatsApp"
+                aria-label="WhatsApp"
+              >
+                <i className="bi bi-whatsapp" aria-hidden="true" />
               </a>
             </div>
           </div>

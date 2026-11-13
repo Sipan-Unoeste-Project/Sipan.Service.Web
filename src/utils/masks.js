@@ -36,3 +36,44 @@ export function maskCEP(value) {
   if (digits.length > 5) return digits.replace(/(\d{5})(\d{1,3})/, '$1-$2');
   return digits;
 }
+
+/**
+ * Aplica máscara de data: dd/mm/aaaa
+ */
+export function maskDate(value) {
+  const digits = String(value ?? '')
+    .replace(/\D/g, '')
+    .slice(0, 8);
+  if (digits.length > 4) {
+    return digits.replace(/(\d{2})(\d{2})(\d{1,4})/, '$1/$2/$3');
+  }
+  if (digits.length > 2) {
+    return digits.replace(/(\d{2})(\d{1,2})/, '$1/$2');
+  }
+  return digits;
+}
+
+/**
+ * Máscara de moeda BR a partir dos dígitos (centavos): 1234 → 12,34
+ */
+export function maskMoneyBr(value) {
+  const digits = String(value ?? '')
+    .replace(/\D/g, '')
+    .slice(0, 13);
+  if (!digits) return '';
+  const n = Number(digits) / 100;
+  return n.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+/** Formata número para input monetário BR. */
+export function formatMoneyBr(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '';
+  return n.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}

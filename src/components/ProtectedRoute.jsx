@@ -1,8 +1,9 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { podeAcessarRota } from '../utils/permissoes';
 
 export default function ProtectedRoute({ children }) {
-  const { autenticado, carregando } = useAuth();
+  const { autenticado, carregando, usuario } = useAuth();
   const location = useLocation();
 
   if (carregando) {
@@ -15,6 +16,10 @@ export default function ProtectedRoute({ children }) {
 
   if (!autenticado) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  if (!podeAcessarRota(usuario?.permissao, location.pathname)) {
+    return <Navigate to="/inicio" replace />;
   }
 
   return children;

@@ -25,3 +25,27 @@ export function getMe() {
 export function logout() {
   return apiRequest('/api/auth/logout', { method: 'POST' }).catch(() => null);
 }
+
+/** Solicita recuperação de senha pelo e-mail cadastrado. */
+export function esqueciSenha({ email }) {
+  return apiRequest('/api/auth/esqueci-senha', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+/** Redefine senha com o token de recuperação. */
+export function redefinirSenha({ token, senha }) {
+  return apiRequest('/api/auth/redefinir-senha', {
+    method: 'POST',
+    body: JSON.stringify({ token, senha }),
+  });
+}
+
+/** Troca senha do usuário logado. */
+export function trocarSenha({ senhaAtual, senhaNova }) {
+  return apiRequest('/api/auth/trocar-senha', {
+    method: 'POST',
+    body: JSON.stringify({ senhaAtual, senhaNova }),
+  });
+}

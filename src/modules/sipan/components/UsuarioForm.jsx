@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
-import * as usuariosApi from '../../../api/usuariosApi';
 import FormSelect from '../../../components/FormSelect';
 import StatusToggle from '../../../components/StatusToggle';
-
-const SENHA_FORTE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+import { SENHA_FORTE_MSG, senhaForteValida } from '../../../utils/senha';
 
 const EMPTY_FORM = {
   nome: '',
@@ -19,6 +17,7 @@ const PERMISSOES = ['Administrador', 'Financeiro', 'Veterinário', 'Voluntário'
 export default function UsuarioForm({
   initialData = EMPTY_FORM,
   isEditing = false,
+  bloquearStatus = false,
   onSubmit,
   onCancel,
   submitLabel = 'Salvar',
@@ -44,10 +43,9 @@ export default function UsuarioForm({
     if (!form.email.trim()) errs.email = 'E-mail é obrigatório.';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'E-mail inválido.';
     if (!form.permissao) errs.permissao = 'Selecione uma permissão.';
-    if (!isEditing && !form.senha.trim()) errs.senha = 'Senha é obrigatória para novo usuário.';
-    if (form.senha.trim() && !SENHA_FORTE.test(form.senha)) {
-      errs.senha =
-        'Mínimo 8 caracteres: maiúscula, minúscula, número e caractere especial.';
+    if (!isEditing) {
+      if (!form.senha.trim()) errs.senha = 'Senha é obrigatória para novo usuário.';
+      else if (!senhaForteValida(form.senha)) errs.senha = SENHA_FORTE_MSG;
     }
     return errs;
   }
@@ -97,7 +95,7 @@ export default function UsuarioForm({
       </div>
 
       <div className="row g-3 mb-3">
-        <div className="col-md-6">
+        <div className={isEditing ? 'col-12' : 'col-md-6'}>
           <label htmlFor="email" className="form-label fw-semibold">
             E-mail <span className="text-danger">*</span>
           </label>
@@ -112,26 +110,25 @@ export default function UsuarioForm({
           />
           {errors.email && <div className="invalid-feedback">{errors.email}</div>}
         </div>
-        <div className="col-md-6">
-          <label htmlFor="senha" className="form-label fw-semibold">
-            {isEditing ? 'Nova senha (opcional)' : 'Senha'}{' '}
-            {!isEditing && <span className="text-danger">*</span>}
-          </label>
-          <input
-            type="password"
-            id="senha"
-            name="senha"
-            className={`form-control ${errors.senha ? 'is-invalid' : ''}`}
-            placeholder="Digite uma senha forte"
-            value={form.senha}
-            onChange={handleChange}
-            autoComplete="new-password"
-          />
-          {errors.senha && <div className="invalid-feedback">{errors.senha}</div>}
-          <small className="text-muted">
-            Mínimo 8 caracteres: maiúscula, minúscula, número e caractere especial.
-          </small>
-        </div>
+        {!isEditing && (
+          <div className="col-md-6">
+            <label htmlFor="senha" className="form-label fw-semibold">
+              Senha <span className="text-danger">*</span>
+            </label>
+            <input
+              type="password"
+              id="senha"
+              name="senha"
+              className={`form-control ${errors.senha ? 'is-invalid' : ''}`}
+              placeholder="Digite uma senha forte"
+              value={form.senha}
+              onChange={handleChange}
+              autoComplete="new-password"
+            />
+            {errors.senha && <div className="invalid-feedback">{errors.senha}</div>}
+            <small className="text-muted">{SENHA_FORTE_MSG}</small>
+          </div>
+        )}
       </div>
 
       <div className="row g-3 mb-4">
@@ -160,8 +157,14 @@ export default function UsuarioForm({
           <StatusToggle
             id="usuario-status"
             ativo={form.status === 'Ativo'}
+            disabled={bloquearStatus}
             onChange={(status) => setForm((prev) => ({ ...prev, status }))}
           />
+          {bloquearStatus ? (
+            <small className="text-muted d-block mt-1">
+              Você não pode inativar a própria conta.
+            </small>
+          ) : null}
         </div>
       </div>
 

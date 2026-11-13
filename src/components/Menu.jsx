@@ -15,7 +15,7 @@ export default function Menu() {
       <nav className="menu-nav">
         {MENU_SECTIONS.map((section) => {
           const items = menuOptionsFromFilter(opcoesFiltradas, section.menu);
-          if (buscaAtiva && items.length === 0) return null;
+          if (items.length === 0) return null;
 
           return (
             <div key={section.title} className="menu-section">

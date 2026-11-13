@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import PageShell from '../../../components/PageShell';
+import { usePermissao } from '../../../hooks/usePermissao';
 
 const links = [
   { to: '/apac/doacao', title: 'Doações', desc: 'Registrar doações em dinheiro ou produtos' },
@@ -9,16 +10,20 @@ const links = [
   { to: '/apac/despesas', title: 'Despesas', desc: 'Categorias e gastos do abrigo' },
   { to: '/apac/saude', title: 'Saúde animal', desc: 'Histórico veterinário dos animais' },
   { to: '/apac/balancete', title: 'Balancete', desc: 'Relatório financeiro consolidado' },
+  { to: '/apac/parceiros', title: 'Parceiros', desc: 'Organizações e empresas colaboradoras' },
 ];
 
 export default function ApacPainelPage() {
+  const { podeRota } = usePermissao();
+  const linksVisiveis = links.filter((item) => podeRota(item.to));
+
   return (
     <PageShell
       title="APAC"
       subtitle="Associação Protetora de Animais de Cananéia — gestão integrada"
     >
       <div className="row g-3">
-        {links.map((item) => (
+        {linksVisiveis.map((item) => (
           <div className="col-sm-6 col-lg-4" key={item.to}>
             <Link to={item.to} className="text-decoration-none text-body">
               <div className="card h-100 border-0 shadow-sm home-card">

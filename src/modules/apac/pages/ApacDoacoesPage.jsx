@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ApiError } from '../../../api/client';
-import { useAuth } from '../../../context/AuthContext';
+import { usePermissao } from '../../../hooks/usePermissao';
 import * as doacoesApi from '../../../api/doacoesApi';
 import FormSelect from '../../../components/FormSelect';
 import PageShell from '../../../components/PageShell';
@@ -26,8 +26,11 @@ const emptyItem = { produto: 'Ração para cães', quantidade: '1', unidade: 'Un
 
 export default function ApacDoacoesPage() {
   const location = useLocation();
-  const { autenticado } = useAuth();
-  const modoPublico = location.pathname.startsWith('/publico') || !autenticado;
+  const { autenticado, podeRecurso } = usePermissao();
+  const modoPublico =
+    location.pathname.startsWith('/publico') ||
+    !autenticado ||
+    !podeRecurso('doacoes');
   const [doacoes, setDoacoes] = useState([]);
   const [tipo, setTipo] = useState('dinheiro');
   const [formD, setFormD] = useState(emptyDinheiro);

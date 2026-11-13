@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { ApiError } from '../../../api/client';
+import { useAuth } from '../../../context/AuthContext';
 import * as usuariosApi from '../../../api/usuariosApi';
 import PageShell from '../../../components/PageShell';
 import UsuarioForm from '../components/UsuarioForm';
@@ -8,6 +9,7 @@ import UsuarioForm from '../components/UsuarioForm';
 export default function EditarUsuarioPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { usuario: usuarioLogado, atualizarSessao } = useAuth();
   const [usuario, setUsuario] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
@@ -54,6 +56,9 @@ export default function EditarUsuarioPage() {
     setErro('');
     try {
       await usuariosApi.updateUsuario(usuario.id, usuariosApi.toUsuarioBody(form));
+      if (Number(usuarioLogado?.id) === Number(usuario.id)) {
+        await atualizarSessao();
+      }
       navigate('/usuarios', { state: { toast: 'Usuário atualizado com sucesso!' } });
     } catch (err) {
       setErro(err instanceof ApiError ? err.message : 'Erro ao atualizar usuário.');
@@ -76,6 +81,7 @@ export default function EditarUsuarioPage() {
           <UsuarioForm
             initialData={usuario}
             isEditing
+            bloquearStatus={Number(usuarioLogado?.id) === Number(usuario.id)}
             onSubmit={handleSubmit}
             onCancel={() => navigate('/usuarios')}
             submitLabel="Salvar Alterações"
