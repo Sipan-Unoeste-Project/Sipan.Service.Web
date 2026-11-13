@@ -17,6 +17,8 @@ export const NAV_OPTIONS = [
   { to: '/apac/parceiros', label: 'Parceiros', desc: 'Organizações e empresas colaboradoras', group: 'APAC', menu: 'admin' },
   { to: '/', label: 'Quem somos', desc: 'Sobre a instituição', group: 'Público', menu: 'public' },
   { to: '/publico/animais', label: 'Animais', desc: 'Animais para adoção', group: 'Público', menu: 'public' },
+  { to: '/publico/adocao', label: 'Quero Adotar', desc: 'Solicitar adoção de um animal', group: 'Público', menu: 'public' },
+  { to: '/publico/termo', label: 'Assinar Termo', desc: 'Assinar o termo de responsabilidade da adoção', group: 'Público', menu: 'public' },
   { to: '/publico/doacoes', label: 'Doações', desc: 'Como doar', group: 'Público', menu: 'public' },
   { to: '/publico/campanhas', label: 'Campanhas', desc: 'Campanhas públicas', group: 'Público', menu: 'public' },
   { to: '/publico/contato', label: 'Contato', desc: 'Fale conosco', group: 'Público', menu: 'public' },

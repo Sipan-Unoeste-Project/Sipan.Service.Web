@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import FormSelect from '../../../components/FormSelect';
 import { maskCPF, maskPhone } from '../../../utils/masks';
+import { validateCPF, validateEmail } from '../../../utils/validators';
+import TermoResponsabilidadeTexto from './TermoResponsabilidadeTexto';
 
 const EMPTY_FORM = {
   nomeAdotante: '',
@@ -28,7 +30,44 @@ export default function SolicitacaoAdocaoForm({
   const [form, setForm] = useState({ ...EMPTY_FORM, ...initialData, animalId: String(initialData.animalId ?? '') });
   const [mostrarTermo, setMostrarTermo] = useState(false);
   const [salvando, setSalvando] = useState(false);
-  const [erroLocal, setErroLocal] = useState('');
+  const [errors, setErrors] = useState({});
+
+  function validate(data) {
+    const errs = {};
+
+    if (!data.nomeAdotante.trim()) {
+      errs.nomeAdotante = 'Nome do adotante é obrigatório.';
+    }
+    if (!data.cpf.trim()) {
+      errs.cpf = 'CPF é obrigatório.';
+    } else if (!validateCPF(data.cpf)) {
+      errs.cpf = 'CPF inválido.';
+    }
+    if (!data.telefone.trim()) {
+      errs.telefone = 'Telefone é obrigatório.';
+    } else if (data.telefone.replace(/\D/g, '').length < 10) {
+      errs.telefone = 'Telefone inválido (mínimo 10 dígitos).';
+    }
+    if (!data.email.trim()) {
+      errs.email = 'E-mail é obrigatório.';
+    } else if (!validateEmail(data.email)) {
+      errs.email = 'E-mail inválido.';
+    }
+    if (!data.animalId) {
+      errs.animalId = 'Selecione o animal desejado.';
+    }
+    if (!data.tipoResidencia.trim()) {
+      errs.tipoResidencia = 'Selecione o tipo de residência.';
+    }
+    if (!data.motivo.trim()) {
+      errs.motivo = 'Conte o motivo da adoção.';
+    }
+    if (!data.aceitaTermo) {
+      errs.aceitaTermo = 'Você precisa aceitar o termo de responsabilidade.';
+    }
+
+    return errs;
+  }
 
   function handleChange(event) {
     const { name, value, type, checked } = event.target;
@@ -36,18 +75,24 @@ export default function SolicitacaoAdocaoForm({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  }
+
+  function handleMaskedChange(name, maskedValue) {
+    setForm((prev) => ({ ...prev, [name]: maskedValue }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
-    setErroLocal('');
 
-    if (!form.nomeAdotante || !form.cpf || !form.telefone || !form.email || !form.animalId || !form.motivo || !form.tipoResidencia) {
-      setErroLocal('Preencha todos os campos obrigatórios.');
-      return;
-    }
-    if (!form.aceitaTermo) {
-      setErroLocal('Você precisa aceitar o termo de responsabilidade.');
+    const errs = validate(form);
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
       return;
     }
 
@@ -55,7 +100,6 @@ export default function SolicitacaoAdocaoForm({
     try {
       await onSubmit(form);
     } catch {
-      /* erro tratado pela página */
     } finally {
       setSalvando(false);
     }
@@ -63,8 +107,6 @@ export default function SolicitacaoAdocaoForm({
 
   return (
     <form onSubmit={handleSubmit} noValidate>
-      {erroLocal && <div className="alert alert-danger py-2">{erroLocal}</div>}
-
       <h6 className="text-muted text-uppercase mb-3" style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}>
         Dados do Adotante
       </h6>
@@ -78,11 +120,12 @@ export default function SolicitacaoAdocaoForm({
             id="nomeAdotante"
             name="nomeAdotante"
             type="text"
-            className="form-control"
+            className={`form-control ${errors.nomeAdotante ? 'is-invalid' : ''}`}
             placeholder="Nome do adotante"
             value={form.nomeAdotante}
             onChange={handleChange}
           />
+          {errors.nomeAdotante && <div className="invalid-feedback">{errors.nomeAdotante}</div>}
         </div>
 
         <div className="col-md-6">
@@ -93,12 +136,13 @@ export default function SolicitacaoAdocaoForm({
             id="cpf"
             name="cpf"
             type="text"
-            className="form-control"
+            className={`form-control ${errors.cpf ? 'is-invalid' : ''}`}
             placeholder="000.000.000-00"
             maxLength={14}
             value={form.cpf}
-            onChange={(e) => setForm((prev) => ({ ...prev, cpf: maskCPF(e.target.value) }))}
+            onChange={(e) => handleMaskedChange('cpf', maskCPF(e.target.value))}
           />
+          {errors.cpf && <div className="invalid-feedback">{errors.cpf}</div>}
         </div>
 
         <div className="col-md-6">
@@ -109,12 +153,13 @@ export default function SolicitacaoAdocaoForm({
             id="telefone"
             name="telefone"
             type="text"
-            className="form-control"
+            className={`form-control ${errors.telefone ? 'is-invalid' : ''}`}
             placeholder="(00) 00000-0000"
             maxLength={15}
             value={form.telefone}
-            onChange={(e) => setForm((prev) => ({ ...prev, telefone: maskPhone(e.target.value) }))}
+            onChange={(e) => handleMaskedChange('telefone', maskPhone(e.target.value))}
           />
+          {errors.telefone && <div className="invalid-feedback">{errors.telefone}</div>}
         </div>
 
         <div className="col-md-6">
@@ -125,11 +170,12 @@ export default function SolicitacaoAdocaoForm({
             id="email"
             name="email"
             type="email"
-            className="form-control"
+            className={`form-control ${errors.email ? 'is-invalid' : ''}`}
             placeholder="email@exemplo.com"
             value={form.email}
             onChange={handleChange}
           />
+          {errors.email && <div className="invalid-feedback">{errors.email}</div>}
         </div>
 
         <div className="col-12">
@@ -163,19 +209,23 @@ export default function SolicitacaoAdocaoForm({
               &quot;Disponível&quot; (animais em tratamento ou indisponíveis não aparecem aqui).
             </p>
           ) : (
-            <FormSelect
-              id="animalId"
-              name="animalId"
-              value={form.animalId}
-              onChange={handleChange}
-            >
-              <option value="">Selecione um animal</option>
-              {animais.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.nome} — {a.especie} {a.raca ? `(${a.raca})` : ''}
-                </option>
-              ))}
-            </FormSelect>
+            <>
+              <FormSelect
+                id="animalId"
+                name="animalId"
+                value={form.animalId}
+                onChange={handleChange}
+                className={errors.animalId ? 'is-invalid' : ''}
+              >
+                <option value="">Selecione um animal</option>
+                {animais.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.nome} — {a.especie} {a.raca ? `(${a.raca})` : ''}
+                  </option>
+                ))}
+              </FormSelect>
+              {errors.animalId && <div className="invalid-feedback d-block">{errors.animalId}</div>}
+            </>
           )}
         </div>
 
@@ -188,6 +238,7 @@ export default function SolicitacaoAdocaoForm({
             name="tipoResidencia"
             value={form.tipoResidencia}
             onChange={handleChange}
+            className={errors.tipoResidencia ? 'is-invalid' : ''}
           >
             <option value="">Selecione</option>
             <option>Casa com quintal</option>
@@ -195,6 +246,7 @@ export default function SolicitacaoAdocaoForm({
             <option>Apartamento</option>
             <option>Sítio / Fazenda</option>
           </FormSelect>
+          {errors.tipoResidencia && <div className="invalid-feedback d-block">{errors.tipoResidencia}</div>}
         </div>
 
         <div className="col-md-6">
@@ -256,12 +308,13 @@ export default function SolicitacaoAdocaoForm({
           <textarea
             id="motivo"
             name="motivo"
-            className="form-control"
+            className={`form-control ${errors.motivo ? 'is-invalid' : ''}`}
             rows={3}
             placeholder="Conte um pouco sobre por que deseja adotar este animal..."
             value={form.motivo}
             onChange={handleChange}
           />
+          {errors.motivo && <div className="invalid-feedback">{errors.motivo}</div>}
         </div>
       </div>
 
@@ -288,18 +341,27 @@ export default function SolicitacaoAdocaoForm({
           </button>
         )}
         {mostrarTermo && (
-          <p className="mt-2 text-muted" style={{ fontSize: '0.8rem' }}>
-            O adotante se compromete a oferecer ao animal um ambiente seguro, limpo e adequado às suas necessidades.
-            O animal deverá ser mantido vacinado e vermifugado regularmente. O adotante concorda em comunicar
-            à instituição qualquer problema de saúde grave do animal. A guarda do animal poderá ser revertida
-            em caso de descumprimento deste termo.
-          </p>
+          <div className="mt-3 pt-3 border-top">
+            <TermoResponsabilidadeTexto />
+            <button
+              type="button"
+              className="btn btn-link p-0 mt-2 text-start"
+              style={{ fontSize: '0.8rem' }}
+              onClick={() => setMostrarTermo(false)}
+            >
+              Ocultar termo completo
+            </button>
+          </div>
         )}
+        <p className="mt-3 mb-0 text-muted" style={{ fontSize: '0.8rem' }}>
+          A assinatura do termo é feita online, na página &quot;Assinar Termo&quot;, depois que a
+          sua solicitação for aprovada.
+        </p>
       </div>
 
       <div className="form-check mb-4">
         <input
-          className="form-check-input"
+          className={`form-check-input ${errors.aceitaTermo ? 'is-invalid' : ''}`}
           type="checkbox"
           id="aceitaTermo"
           name="aceitaTermo"
@@ -309,6 +371,7 @@ export default function SolicitacaoAdocaoForm({
         <label className="form-check-label" htmlFor="aceitaTermo">
           Li e aceito o termo de responsabilidade <span className="text-danger">*</span>
         </label>
+        {errors.aceitaTermo && <div className="invalid-feedback d-block">{errors.aceitaTermo}</div>}
       </div>
 
       <div className="d-flex gap-2">

@@ -17,6 +17,7 @@ export default function ConfirmModal({
   message,
   nome,
   confirmLabel = 'Excluir',
+  confirmVariant = 'danger',
   onConfirm,
   onCancel,
 }) {
@@ -80,7 +81,7 @@ export default function ConfirmModal({
               <button type="button" className="btn btn-outline-secondary" onClick={onCancel}>
                 Cancelar
               </button>
-              <button type="button" className="btn btn-danger" onClick={onConfirm}>
+              <button type="button" className={`btn btn-${confirmVariant}`} onClick={onConfirm}>
                 {confirmLabel}
               </button>
             </div>

@@ -32,7 +32,9 @@ import ApacBalancetePage from './modules/apac/pages/ApacBalancetePage';
 import PaginaParceiros from './modules/parceiros/PaginaParceiros';
 import AdocoesPage from './modules/sipan/pages/AdocoesPage';
 import NovaSolicitacaoPage from './modules/sipan/pages/NovaSolicitacaoPage';
+import DetalheSolicitacaoPage from './modules/sipan/pages/DetalheSolicitacaoPage';
 import EditarSolicitacaoPage from './modules/sipan/pages/EditarSolicitacaoPage';
+import AssinarTermoPage from './modules/sipan/pages/AssinarTermoPage';
 
 function isPublicPath(pathname) {
   return pathname === '/' || pathname === '/login' || pathname.startsWith('/publico');
@@ -60,6 +62,8 @@ function AppContent() {
       <Route path="/publico/animais" element={<PaginaAnimais />} />
       <Route path="/publico/doacoes" element={<ApacDoacoesPage />} />
       <Route path="/publico/campanhas" element={<ApacCampanhasPage />} />
+      <Route path="/publico/adocao" element={<NovaSolicitacaoPage />} />
+      <Route path="/publico/termo" element={<AssinarTermoPage />} />
 
       <Route element={<AdminOutlet />}>
         <Route path="/inicio" element={<HomePage />} />
@@ -79,6 +83,7 @@ function AppContent() {
 
         <Route path="/adocoes" element={<AdocoesPage />} />
         <Route path="/adocoes/nova" element={<NovaSolicitacaoPage />} />
+        <Route path="/adocoes/:id" element={<DetalheSolicitacaoPage />} />
         <Route path="/adocoes/:id/editar" element={<EditarSolicitacaoPage />} />
 
         <Route path="/apac" element={<ApacPainelPage />} />

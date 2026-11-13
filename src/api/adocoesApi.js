@@ -22,6 +22,27 @@ export function updateAdocao(id, body) {
   });
 }
 
+/** Pública: lista solicitações aprovadas do adotante (CPF + e-mail) para assinar o termo. */
+export function consultarTermosAdocao({ cpf, email }) {
+  return apiRequest('/api/adocoes/termo/consulta', {
+    method: 'POST',
+    body: JSON.stringify({ cpf: cpf?.trim(), email: email?.trim() }),
+  });
+}
+
+/** Pública: registra a assinatura eletrônica do termo de responsabilidade. */
+export function assinarTermoAdocao(id, { cpf, email, nomeAssinatura, aceito }) {
+  return apiRequest(`/api/adocoes/${id}/assinar-termo`, {
+    method: 'POST',
+    body: JSON.stringify({
+      cpf: cpf?.trim(),
+      email: email?.trim(),
+      nomeAssinatura: nomeAssinatura?.trim(),
+      aceito: Boolean(aceito),
+    }),
+  });
+}
+
 export function deleteAdocao(id) {
   return apiRequest(`/api/adocoes/${id}`, { method: 'DELETE' });
 }

@@ -55,6 +55,28 @@ export default function AdocoesPage() {
     }
   }
 
+  async function handleDecidir(solicitacao, novoStatus) {
+    setErroAcao('');
+    try {
+      const atualizada = await adocoesApi.updateAdocao(
+        solicitacao.id,
+        adocoesApi.toAdocaoBody({ ...solicitacao, status: novoStatus })
+      );
+      setSolicitacoes((prev) => prev.map((s) => (s.id === atualizada.id ? atualizada : s)));
+      setToast(
+        novoStatus === 'Aprovada'
+          ? 'Solicitação aprovada! O animal foi marcado como adotado.'
+          : novoStatus === 'Recusada'
+            ? 'Solicitação recusada.'
+            : novoStatus === 'Concluída'
+              ? 'Adoção marcada como concluída!'
+              : 'Solicitação movida para análise.'
+      );
+    } catch (err) {
+      setErroAcao(err instanceof ApiError ? err.message : 'Erro ao atualizar a solicitação.');
+    }
+  }
+
   return (
     <PageShell
       title="Solicitações de Adoção"
@@ -76,6 +98,7 @@ export default function AdocoesPage() {
             <AdocaoTable
               solicitacoes={solicitacoes}
               onDelete={handleDelete}
+              onDecidir={handleDecidir}
             />
           )}
         </div>

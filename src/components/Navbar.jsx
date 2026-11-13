@@ -45,6 +45,16 @@ export default function Navbar() {
               </NavLink>
             </li>
             <li className="nav-item">
+              <NavLink to="/publico/adocao" className={linkClass} style={{ color: 'white' }}>
+                Quero Adotar
+              </NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink to="/publico/termo" className={linkClass} style={{ color: 'white' }}>
+                Assinar Termo
+              </NavLink>
+            </li>
+            <li className="nav-item">
               <NavLink to="/publico/doacoes" className={linkClass} style={{ color: 'white' }}>
                 Doações
               </NavLink>
